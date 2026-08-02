@@ -17,15 +17,9 @@ navigation.addEventListener('click', (event) => {
 
 function toggleAnswer() {
   const isRevealed = studyCard.classList.toggle('revealed');
-  revealButton.querySelector('span').textContent = isRevealed ? 'Hide answer' : 'Show answer';
+  revealButton.querySelector('span').textContent = isRevealed ? 'Hide' : 'Reveal';
 }
 
 revealButton.addEventListener('click', toggleAnswer);
-document.addEventListener('keydown', (event) => {
-  if (event.code === 'Space' && !event.target.matches('input, textarea, button')) {
-    event.preventDefault();
-    toggleAnswer();
-  }
-});
 
 document.querySelector('#year').textContent = new Date().getFullYear();

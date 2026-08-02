@@ -110,8 +110,7 @@ h1 em { color: var(--forest); }
 .answer { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .35s ease, opacity .35s ease, margin .35s ease; }
 .answer p { overflow: hidden; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .study-card.revealed .answer { grid-template-rows: 1fr; opacity: 1; margin-top: 22px; }
-.reveal-button { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 15px 16px; border: 0; color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; }
-kbd { padding: 4px 8px; color: var(--ink); background: var(--lime); border-radius: 2px; border: 0; font: 500 8px "DM Mono", monospace; }
+.reveal-button { display: flex; align-items: center; justify-content: center; width: 100%; padding: 15px 16px; border: 0; color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: .04em; }
 .floating-note { z-index: 3; position: absolute; padding: 13px 17px; background: var(--lime); border: 1px solid var(--ink); box-shadow: 5px 6px 0 var(--ink); font: 400 9px/1.55 "DM Mono", monospace; transform: rotate(3deg); }
 .note-top { top: 35px; right: 5px; }
 .note-bottom { left: 5px; bottom: 58px; transform: rotate(-4deg); background: var(--white); }
