@@ -118,7 +118,9 @@ kbd { padding: 4px 8px; color: var(--ink); background: var(--lime); border-radiu
 .visual-caption { z-index: 2; position: absolute; right: -15px; bottom: 10px; margin: 0; font-family: Georgia, serif; font-size: 12px; font-style: italic; line-height: 1.45; transform: rotate(-4deg); }
 
 .marquee { overflow: hidden; padding: 19px 0; color: var(--white); background: var(--forest); transform: rotate(-1deg) scale(1.01); }
-.marquee-track { width: max-content; display: flex; align-items: center; gap: 36px; animation: scroll 26s linear infinite; font: 400 12px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .12em; }
+.marquee-track { width: max-content; display: flex; animation: scroll 28s linear infinite; font: 400 12px "DM Mono", monospace; letter-spacing: .08em; will-change: transform; }
+.marquee-content { flex-shrink: 0; display: flex; align-items: center; gap: 36px; padding-right: 36px; }
+.marquee-content b { margin-right: 5px; color: var(--lime); font-size: 16px; font-weight: 500; }
 .marquee i { color: var(--lime); font-style: normal; }
 @keyframes scroll { to { transform: translateX(-50%); } }
 
