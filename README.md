@@ -2,6 +2,10 @@
 
 A responsive, zero-dependency landing page for a spaced-repetition learning app.
 
+## Live Site Details
+
+The site is now live! https://mcurioste.github.io/Flash-Card-App/
+
 ## Run locally
 
 Open `index.html` directly in a browser, or serve the folder with any static server:
