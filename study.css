@@ -5,6 +5,7 @@
 .study-main { min-height: calc(100vh - 86px); padding: 58px 24px 72px; }
 .deck-heading { text-align: center; }
 .deck-heading .eyebrow { justify-content: center; margin-bottom: 18px; }
+.deck-heading .eyebrow b { font-weight: inherit; }
 .deck-heading h1 { font-size: clamp(43px, 5vw, 68px); }
 .deck-heading h1 em { color: var(--forest); }
 .deck-heading > p:last-child { margin: 17px 0 0; color: var(--muted); font-size: 13px; }
