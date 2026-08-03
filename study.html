@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Study a starter deck of basic Japanese words with Recall." />
+    <title>Basic Japanese — Recall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="study.css" />
+  </head>
+  <body class="study-page">
+    <header class="study-header">
+      <a class="brand" href="index.html" aria-label="Recall home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><span>recall</span>
+      </a>
+      <a class="exit-link" href="index.html"><span aria-hidden="true">←</span> Back home</a>
+    </header>
+    <main class="study-main">
+      <div class="deck-heading">
+        <p class="eyebrow"><span></span> Starter deck</p>
+        <h1>Basic <em>Japanese</em></h1>
+        <p>Everyday words to begin building your vocabulary.</p>
+      </div>
+      <section class="study-workspace" aria-label="Flashcard study session">
+        <div class="session-progress" aria-live="polite">
+          <span id="progress-text">Card 1 of 9</span>
+          <div class="progress-track" aria-hidden="true"><span id="progress-bar"></span></div>
+          <span id="progress-percent">11%</span>
+        </div>
+        <article class="learning-card" id="learning-card">
+          <div class="card-topline">
+            <span class="deck-label">日本語 · BEGINNER · <span id="card-type">NOUN</span></span><span class="card-count" id="card-count">01 / 09</span>
+          </div>
+          <div class="learning-card-content">
+            <p class="prompt-label">WHAT DOES THIS WORD MEAN?</p>
+            <h2 id="card-word" lang="ja">猫</h2>
+            <p class="reading" id="card-reading" lang="ja">ねこ</p>
+            <div class="learning-answer" id="learning-answer" aria-hidden="true">
+              <span class="answer-rule"></span>
+              <p class="meaning" id="card-meaning">cat</p>
+              <p class="example"><span id="card-example" lang="ja">猫が好きです。</span><br /><span id="card-translation">I like cats.</span></p>
+            </div>
+          </div>
+          <button class="study-reveal-button" id="study-reveal-button" type="button" aria-expanded="false">Reveal answer</button>
+        </article>
+        <div class="card-navigation" aria-label="Card navigation">
+          <button class="nav-card-button" id="previous-card" type="button"><span aria-hidden="true">←</span> Previous</button>
+          <p><kbd>Space</kbd> reveal <span>·</span> <kbd>←</kbd> <kbd>→</kbd> move</p>
+          <button class="nav-card-button nav-card-next" id="next-card" type="button">Next <span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+    </main>
+    <script src="study.js"></script>
+  </body>
+</html>
