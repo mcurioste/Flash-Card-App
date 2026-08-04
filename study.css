@@ -13,6 +13,9 @@
 .add-card-button { padding: 12px 18px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
 .add-card-button:hover { color: var(--forest); background: var(--lime); }
 .add-card-button:disabled { opacity: .45; cursor: not-allowed; }
+.edit-card-button { padding: 12px 18px; border: 1px solid var(--ink); color: var(--ink); background: transparent; cursor: pointer; font-size: 11px; font-weight: 700; }
+.edit-card-button:hover { color: var(--white); background: var(--ink); }
+.edit-card-button:disabled { opacity: .45; cursor: not-allowed; }
 .delete-card-button { padding: 12px 18px; border: 1px solid #9a4f43; color: #9a4f43; background: transparent; cursor: pointer; font-size: 11px; font-weight: 700; }
 .delete-card-button:hover { color: var(--white); background: #9a4f43; }
 .delete-card-button:disabled { opacity: .45; cursor: not-allowed; }
@@ -42,6 +45,7 @@ kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font:
 .add-card-dialog { width: min(680px, calc(100% - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--ink); color: var(--ink); background: var(--white); box-shadow: var(--shadow); }
 .add-card-dialog::backdrop { background: rgba(24, 37, 31, .55); }
 .add-card-dialog form { padding: 30px; }
+.dialog-content { padding: 30px; }
 .form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
 .form-heading .eyebrow { margin-bottom: 12px; color: var(--muted); }
 .form-heading h2 { font-size: 36px; }
@@ -67,6 +71,16 @@ kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font:
 .delete-card-option .card-list-meaning { color: var(--muted); font-size: 12px; }
 .confirm-delete-button { padding: 13px 20px; border: 1px solid #9a4f43; color: var(--white); background: #9a4f43; cursor: pointer; font-size: 11px; font-weight: 700; }
 .confirm-delete-button:disabled { opacity: .4; cursor: not-allowed; }
+.edit-card-list { max-height: 390px; overflow-y: auto; border: 1px solid var(--line); }
+.edit-card-option { display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center; padding: 16px; }
+.edit-card-option + .edit-card-option { border-top: 1px solid var(--line); }
+.edit-card-summary strong { font-size: 17px; font-weight: 600; }
+.edit-card-summary small { color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
+.edit-card-summary p { margin: 7px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.edit-one-card-button { padding: 10px 16px; border: 1px solid var(--forest); color: var(--forest); background: transparent; cursor: pointer; font-size: 10px; font-weight: 700; }
+.edit-one-card-button:hover { color: var(--white); background: var(--forest); }
+.edit-form-actions { justify-content: flex-end; }
+.back-to-card-list { padding: 13px 20px; border: 1px solid var(--ink); color: var(--ink); background: transparent; cursor: pointer; font-size: 11px; font-weight: 700; }
 @media (max-width: 600px) {
   .study-header { height: 72px; padding: 0 20px; }
   .study-main { padding: 42px 16px 50px; }
@@ -77,10 +91,13 @@ kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font:
   .card-navigation > p { display: none; }
   .nav-card-button { width: 100%; min-width: 0; }
   .add-card-dialog form { padding: 22px; }
+  .dialog-content { padding: 22px; }
   .card-fields { grid-template-columns: 1fr; }
   .full-field { grid-column: auto; }
   .form-actions { align-items: stretch; flex-direction: column; }
   .deck-actions { align-items: stretch; flex-direction: column; width: min(260px, 100%); margin-right: auto; margin-left: auto; }
   .delete-card-option { grid-template-columns: auto 1fr; }
   .delete-card-option .card-list-meaning { grid-column: 2; }
+  .edit-card-option { grid-template-columns: 1fr; }
+  .edit-one-card-button { width: 100%; }
 }

@@ -47,7 +47,17 @@ const deleteCardMessage = document.querySelector('#delete-card-message');
 const selectAllCards = document.querySelector('#select-all-cards');
 const selectedCardCount = document.querySelector('#selected-card-count');
 const confirmDeleteButton = document.querySelector('#confirm-delete-button');
+const editCardButton = document.querySelector('#edit-card-button');
+const editCardListDialog = document.querySelector('#edit-card-list-dialog');
+const editCardList = document.querySelector('#edit-card-list');
+const closeEditCardListButton = document.querySelector('#close-edit-card-list');
+const editCardDialog = document.querySelector('#edit-card-dialog');
+const editCardForm = document.querySelector('#edit-card-form');
+const closeEditCardButton = document.querySelector('#close-edit-card');
+const backToEditListButton = document.querySelector('#back-to-edit-list');
+const editCardMessage = document.querySelector('#edit-card-message');
 let currentIndex = 0;
+let editingCardIndex = null;
 
 function renderDeck() {
   document.title = `${selectedDeck.title} ${selectedDeck.titleAccent} — Recall`;
@@ -126,6 +136,7 @@ function updateAddCardControls() {
     : `${cards.length} cards in deck`;
   addCardButton.disabled = limitReached;
   addCardButton.textContent = limitReached ? 'Card limit reached' : '+ Add a card';
+  editCardButton.disabled = cards.length === 0;
   deleteCardButton.disabled = cards.length === 0;
 }
 
@@ -149,6 +160,10 @@ function deleteCardsFromDeck(indexes) {
   [...indexes].sort((a, b) => b - a).forEach((index) => {
     cards.splice(index, 1);
   });
+}
+
+function updateCardInDeck(index, updatedCard) {
+  cards[index] = updatedCard;
 }
 
 function addCard(event) {
@@ -250,6 +265,93 @@ function deleteSelectedCards(event) {
   renderCard();
 }
 
+function renderEditCardList() {
+  editCardList.replaceChildren();
+
+  cards.forEach((deckCard, index) => {
+    const option = document.createElement('article');
+    option.className = 'edit-card-option';
+
+    const summary = document.createElement('div');
+    summary.className = 'edit-card-summary';
+    const word = document.createElement('strong');
+    const details = document.createElement('small');
+    const meaning = document.createElement('p');
+    word.textContent = deckCard.word;
+    details.textContent = `${deckCard.reading} · ${deckCard.type}`;
+    meaning.textContent = `${deckCard.meaning} — ${deckCard.example} / ${deckCard.translation}`;
+    summary.append(word, document.createElement('br'), details, meaning);
+
+    const editButton = document.createElement('button');
+    editButton.className = 'edit-one-card-button';
+    editButton.type = 'button';
+    editButton.dataset.cardIndex = String(index);
+    editButton.textContent = 'Edit';
+    editButton.setAttribute('aria-label', `Edit ${deckCard.word}`);
+    option.append(summary, editButton);
+    editCardList.append(option);
+  });
+}
+
+function openEditCardList() {
+  renderEditCardList();
+  editCardListDialog.showModal();
+}
+
+function closeEditCardList() {
+  editCardListDialog.close();
+}
+
+function openEditCardForm(index) {
+  const deckCard = cards[index];
+  if (!deckCard) return;
+
+  editingCardIndex = index;
+  editCardMessage.textContent = '';
+  Object.entries(deckCard).forEach(([field, value]) => {
+    if (editCardForm.elements[field]) editCardForm.elements[field].value = value;
+  });
+  closeEditCardList();
+  editCardDialog.showModal();
+  editCardForm.elements.word.focus();
+}
+
+function closeEditCardForm() {
+  editCardDialog.close();
+  editingCardIndex = null;
+}
+
+function returnToEditCardList() {
+  closeEditCardForm();
+  openEditCardList();
+}
+
+function saveEditedCard(event) {
+  event.preventDefault();
+  if (editingCardIndex === null || !cards[editingCardIndex]) return;
+
+  const formData = new FormData(editCardForm);
+  const updatedCard = {
+    word: formData.get('word').trim(),
+    reading: formData.get('reading').trim(),
+    type: formData.get('type').trim().toUpperCase(),
+    meaning: formData.get('meaning').trim(),
+    example: formData.get('example').trim(),
+    translation: formData.get('translation').trim()
+  };
+
+  if (Object.values(updatedCard).some((value) => !value)) {
+    editCardMessage.textContent = 'Please complete every field before saving the card.';
+    return;
+  }
+
+  const updatedIndex = editingCardIndex;
+  updateCardInDeck(updatedIndex, updatedCard);
+  currentIndex = updatedIndex;
+  closeEditCardForm();
+  renderCard();
+}
+
 revealButton.addEventListener('click', toggleAnswer);
 previousButton.addEventListener('click', () => moveCard(-1));
 nextButton.addEventListener('click', () => moveCard(1));
@@ -271,6 +373,21 @@ selectAllCards.addEventListener('change', () => {
 });
 deleteCardDialog.addEventListener('click', (event) => {
   if (event.target === deleteCardDialog) closeDeleteCardForm();
+});
+editCardButton.addEventListener('click', openEditCardList);
+closeEditCardListButton.addEventListener('click', closeEditCardList);
+editCardList.addEventListener('click', (event) => {
+  const editButton = event.target.closest('.edit-one-card-button');
+  if (editButton) openEditCardForm(Number(editButton.dataset.cardIndex));
+});
+editCardListDialog.addEventListener('click', (event) => {
+  if (event.target === editCardListDialog) closeEditCardList();
+});
+editCardForm.addEventListener('submit', saveEditedCard);
+closeEditCardButton.addEventListener('click', closeEditCardForm);
+backToEditListButton.addEventListener('click', returnToEditCardList);
+editCardDialog.addEventListener('click', (event) => {
+  if (event.target === editCardDialog) closeEditCardForm();
 });
 document.addEventListener('keydown', (event) => {
   if (event.target !== document.body) return;

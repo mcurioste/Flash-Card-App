@@ -25,6 +25,7 @@
         <p id="deck-description"></p>
         <div class="deck-actions">
           <button class="add-card-button" id="add-card-button" type="button">+ Add a card</button>
+          <button class="edit-card-button" id="edit-card-button" type="button">Edit cards</button>
           <button class="delete-card-button" id="delete-card-button" type="button">Delete cards</button>
         </div>
       </div>
@@ -79,6 +80,44 @@
         <div class="form-actions">
           <span id="deck-card-count">9 of 19 cards in deck</span>
           <button class="save-card-button" type="submit">Add to deck</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="add-card-dialog delete-card-dialog" id="edit-card-list-dialog" aria-labelledby="edit-card-list-title">
+      <div class="dialog-content">
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow"><span></span>Starter deck</p>
+            <h2 id="edit-card-list-title">Edit cards</h2>
+          </div>
+          <button class="dialog-close" id="close-edit-card-list" type="button" aria-label="Close edit cards list">&times;</button>
+        </div>
+        <p class="form-intro">Choose a card to view and update its information.</p>
+        <div class="edit-card-list" id="edit-card-list"></div>
+      </div>
+    </dialog>
+    <dialog class="add-card-dialog" id="edit-card-dialog" aria-labelledby="edit-card-title">
+      <form id="edit-card-form">
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow"><span></span>Starter deck</p>
+            <h2 id="edit-card-title">Edit card</h2>
+          </div>
+          <button class="dialog-close" id="close-edit-card" type="button" aria-label="Close edit card form">&times;</button>
+        </div>
+        <p class="form-intro">Update the card information below. Every field is required.</p>
+        <div class="card-fields">
+          <label>Word<input name="word" type="text" lang="ja" required /></label>
+          <label>Reading<input name="reading" type="text" lang="ja" required /></label>
+          <label>Type<input name="type" type="text" required /></label>
+          <label>Meaning<input name="meaning" type="text" required /></label>
+          <label class="full-field">Example sentence<input name="example" type="text" lang="ja" required /></label>
+          <label class="full-field">Example translation<input name="translation" type="text" required /></label>
+        </div>
+        <p class="form-message" id="edit-card-message" aria-live="polite"></p>
+        <div class="form-actions edit-form-actions">
+          <button class="back-to-card-list" id="back-to-edit-list" type="button">Back to list</button>
+          <button class="save-card-button" type="submit">Save changes</button>
         </div>
       </form>
     </dialog>
