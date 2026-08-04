@@ -39,7 +39,22 @@ function actionButton(label, className) { const button = document.createElement(
 function openCreateDialog() { editingDeckId = null; form.reset(); formMessage.textContent = ''; formTitle.textContent = 'Create deck'; dialog.showModal(); form.elements.title.focus(); }
 function openEditDialog(id) { const deck = loadDecks().find((item) => item.id === id); if (!deck) return; editingDeckId = id; formTitle.textContent = 'Edit deck'; formMessage.textContent = ''; ['title', 'description', 'language', 'level'].forEach((field) => { form.elements[field].value = deck[field]; }); dialog.showModal(); form.elements.title.focus(); }
 function closeDeckDialog() { dialog.close(); editingDeckId = null; }
-function saveDeck(event) { event.preventDefault(); const metadata = deckMetadata(new FormData(form)); if (Object.values(metadata).some((value) => !value)) { formMessage.textContent = 'Please complete every field.'; return; } const wasEditing = Boolean(editingDeckId); if (wasEditing) updateDeck(editingDeckId, metadata); else createDeck(metadata); closeDeckDialog(); renderDecks(); announce(wasEditing ? 'Deck updated.' : 'Deck created.'); }
+function saveDeck(event) {
+  event.preventDefault();
+  const metadata = deckMetadata(new FormData(form));
+  if (Object.values(metadata).some((value) => !value)) { formMessage.textContent = 'Please complete every field.'; return; }
+
+  if (editingDeckId) {
+    updateDeck(editingDeckId, metadata);
+    closeDeckDialog();
+    renderDecks();
+    announce('Deck updated.');
+    return;
+  }
+
+  const createdDeck = createDeck(metadata);
+  location.assign(`study.html?deck=${encodeURIComponent(createdDeck.id)}`);
+}
 function openDeleteDialog(id) { const deck = loadDecks().find((item) => item.id === id); if (!deck) return; deletingDeckId = id; deleteDescription.textContent = `“${deck.title}” and its ${deck.cards.length} ${deck.cards.length === 1 ? 'card' : 'cards'} will be removed from this browser. This cannot be undone.`; deleteDialog.showModal(); }
 function closeDeleteDialog() { deleteDialog.close(); deletingDeckId = null; }
 function confirmDelete(event) { event.preventDefault(); if (!deletingDeckId) return; deleteDeck(deletingDeckId); closeDeleteDialog(); renderDecks(); announce('Deck deleted.'); }
