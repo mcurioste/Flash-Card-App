@@ -8,7 +8,10 @@
 .deck-heading .eyebrow b { font-weight: inherit; }
 .deck-heading h1 { font-size: clamp(43px, 5vw, 68px); }
 .deck-heading h1 em { color: var(--forest); }
-.deck-heading > p:last-child { margin: 17px 0 0; color: var(--muted); font-size: 13px; }
+#deck-description { margin: 17px 0 0; color: var(--muted); font-size: 13px; }
+.add-card-button { margin-top: 24px; padding: 12px 18px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
+.add-card-button:hover { color: var(--forest); background: var(--lime); }
+.add-card-button:disabled { opacity: .45; cursor: not-allowed; }
 .study-workspace { width: min(620px, 100%); margin: 42px auto 0; }
 .session-progress { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; margin-bottom: 16px; color: var(--muted); font: 500 9px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
 .progress-track { height: 2px; overflow: hidden; background: var(--cream); }
@@ -32,6 +35,23 @@
 .nav-card-button:disabled { opacity: .3; cursor: not-allowed; }
 .card-navigation > p { margin: 0; color: var(--muted); font: 400 8px "DM Mono", monospace; white-space: nowrap; }
 kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font: inherit; background: var(--white); }
+.add-card-dialog { width: min(680px, calc(100% - 32px)); max-height: calc(100vh - 32px); padding: 0; border: 1px solid var(--ink); color: var(--ink); background: var(--white); box-shadow: var(--shadow); }
+.add-card-dialog::backdrop { background: rgba(24, 37, 31, .55); }
+.add-card-dialog form { padding: 30px; }
+.form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.form-heading .eyebrow { margin-bottom: 12px; color: var(--muted); }
+.form-heading h2 { font-size: 36px; }
+.dialog-close { padding: 0 6px; border: 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 30px; line-height: 1; }
+.form-intro { margin: 16px 0 24px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.card-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.card-fields label { display: grid; gap: 7px; font: 500 9px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.card-fields input { width: 100%; padding: 12px; border: 1px solid var(--line); color: var(--ink); background: var(--paper); font: 500 14px "Manrope", sans-serif; }
+.card-fields input:focus { outline: 2px solid var(--lime); outline-offset: 1px; border-color: var(--forest); }
+.full-field { grid-column: 1 / -1; }
+.form-message { min-height: 20px; margin: 14px 0 0; color: #9a4f43; font-size: 11px; }
+.form-actions { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 8px; border-top: 1px solid var(--line); }
+.form-actions span { color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
+.save-card-button { padding: 13px 20px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
 @media (max-width: 600px) {
   .study-header { height: 72px; padding: 0 20px; }
   .study-main { padding: 42px 16px 50px; }
@@ -41,4 +61,8 @@ kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font:
   .card-navigation { grid-template-columns: 1fr 1fr; }
   .card-navigation > p { display: none; }
   .nav-card-button { width: 100%; min-width: 0; }
+  .add-card-dialog form { padding: 22px; }
+  .card-fields { grid-template-columns: 1fr; }
+  .full-field { grid-column: auto; }
+  .form-actions { align-items: stretch; flex-direction: column; }
 }

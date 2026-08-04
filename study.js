@@ -30,6 +30,14 @@ const revealButton = document.querySelector('#study-reveal-button');
 const previousButton = document.querySelector('#previous-card');
 const nextButton = document.querySelector('#next-card');
 const answer = document.querySelector('#learning-answer');
+const addCardButton = document.querySelector('#add-card-button');
+const addCardDialog = document.querySelector('#add-card-dialog');
+const addCardForm = document.querySelector('#add-card-form');
+const closeAddCardButton = document.querySelector('#close-add-card');
+const addCardMessage = document.querySelector('#add-card-message');
+const customCardCount = document.querySelector('#custom-card-count');
+const maxCustomCards = 10;
+let customCardsAdded = 0;
 let currentIndex = 0;
 
 function renderDeck() {
@@ -77,13 +85,65 @@ function moveCard(direction) {
   currentIndex = nextIndex;
   renderCard();
 }
+function updateAddCardControls() {
+  const limitReached = customCardsAdded >= maxCustomCards;
+  customCardCount.textContent = `${customCardsAdded} of ${maxCustomCards} custom cards added`;
+  addCardButton.disabled = limitReached;
+  addCardButton.textContent = limitReached ? 'Card limit reached' : '+ Add a card';
+}
+function openAddCardForm() {
+  addCardMessage.textContent = '';
+  addCardDialog.showModal();
+  addCardForm.elements.word.focus();
+}
+function closeAddCardForm() {
+  addCardDialog.close();
+}
+function addCard(event) {
+  event.preventDefault();
+  if (customCardsAdded >= maxCustomCards) {
+    addCardMessage.textContent = 'You have reached the 10-card limit for this session.';
+    return;
+  }
+
+  const formData = new FormData(addCardForm);
+  const newCard = {
+    word: formData.get('word').trim(),
+    reading: formData.get('reading').trim(),
+    type: formData.get('type').trim().toUpperCase(),
+    meaning: formData.get('meaning').trim(),
+    example: formData.get('example').trim(),
+    translation: formData.get('translation').trim()
+  };
+
+  if (Object.values(newCard).some((value) => !value)) {
+    addCardMessage.textContent = 'Please complete every field before adding the card.';
+    return;
+  }
+
+  cards.push(newCard);
+  customCardsAdded += 1;
+  currentIndex = cards.length - 1;
+  addCardForm.reset();
+  updateAddCardControls();
+  closeAddCardForm();
+  renderCard();
+}
 revealButton.addEventListener('click', toggleAnswer);
 previousButton.addEventListener('click', () => moveCard(-1));
 nextButton.addEventListener('click', () => moveCard(1));
+addCardButton.addEventListener('click', openAddCardForm);
+closeAddCardButton.addEventListener('click', closeAddCardForm);
+addCardForm.addEventListener('submit', addCard);
+addCardDialog.addEventListener('click', (event) => {
+  if (event.target === addCardDialog) closeAddCardForm();
+});
 document.addEventListener('keydown', (event) => {
-  if (event.key === ' ' && event.target === document.body) { event.preventDefault(); toggleAnswer(); }
+  if (event.target !== document.body) return;
+  if (event.key === ' ') { event.preventDefault(); toggleAnswer(); }
   else if (event.key === 'ArrowLeft') moveCard(-1);
   else if (event.key === 'ArrowRight') moveCard(1);
 });
 renderDeck();
 renderCard();
+updateAddCardControls();
