@@ -45,7 +45,8 @@ function saveDeck(event) {
   if (Object.values(metadata).some((value) => !value)) { formMessage.textContent = 'Please complete every field.'; return; }
 
   if (editingDeckId) {
-    updateDeck(editingDeckId, metadata);
+    const updatedDeck = updateDeck(editingDeckId, metadata);
+    if (!updatedDeck) { formMessage.textContent = 'A deck with this title already exists.'; return; }
     closeDeckDialog();
     renderDecks();
     announce('Deck updated.');
@@ -53,6 +54,7 @@ function saveDeck(event) {
   }
 
   const createdDeck = createDeck(metadata);
+  if (!createdDeck) { formMessage.textContent = 'A deck with this title already exists.'; return; }
   location.assign(`study.html?deck=${encodeURIComponent(createdDeck.id)}`);
 }
 function openDeleteDialog(id) { const deck = loadDecks().find((item) => item.id === id); if (!deck) return; deletingDeckId = id; deleteDescription.textContent = `“${deck.title}” and its ${deck.cards.length} ${deck.cards.length === 1 ? 'card' : 'cards'} will be removed from this browser. This cannot be undone.`; deleteDialog.showModal(); }

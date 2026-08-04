@@ -2,6 +2,18 @@
 const defaultDecks = window.RecallDefaultDecks;
 const STORAGE_KEY = 'recallFlashcardDecks';
 const clone = (value) => JSON.parse(JSON.stringify(value));
+const comparisonKey = (value) => String(value).trim().normalize('NFKC').toLocaleLowerCase();
+
+function hasDeckTitle(decks, title, excludedId = null) {
+  const titleKey = comparisonKey(title);
+  return decks.some((deck) => deck.id !== excludedId && comparisonKey(deck.title) === titleKey);
+}
+
+function hasCardIdentity(cards, card, excludedId = null) {
+  const wordKey = comparisonKey(card.word);
+  const readingKey = comparisonKey(card.reading);
+  return cards.some((item) => item.id !== excludedId && comparisonKey(item.word) === wordKey && comparisonKey(item.reading) === readingKey);
+}
 
 function createId(prefix = 'item') {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -59,12 +71,12 @@ function mutateDecks(mutation) {
 }
 
 function createDeck(metadata) {
-  return mutateDecks((decks) => { const deck = { id: createId('deck'), ...metadata, prompt: 'WHAT DOES THIS WORD MEAN?', cards: [] }; decks.push(deck); return deck; });
+  return mutateDecks((decks) => { if (hasDeckTitle(decks, metadata.title)) return null; const deck = { id: createId('deck'), ...metadata, prompt: 'WHAT DOES THIS WORD MEAN?', cards: [] }; decks.push(deck); return deck; });
 }
-function updateDeck(id, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === id); if (!deck) return null; Object.assign(deck, updates, { id, cards: deck.cards }); return deck; }); }
+function updateDeck(id, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === id); if (!deck || hasDeckTitle(decks, updates.title, id)) return null; Object.assign(deck, updates, { id, cards: deck.cards }); return deck; }); }
 function deleteDeck(id) { return mutateDecks((decks) => { const index = decks.findIndex((deck) => deck.id === id); if (index < 0) return false; decks.splice(index, 1); return true; }); }
-function addCard(deckId, card) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck) return null; const saved = { id: createId('card'), ...card }; deck.cards.push(saved); return saved; }); }
-function updateCard(deckId, cardId, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); const card = deck?.cards.find((item) => item.id === cardId); if (!card) return null; Object.assign(card, updates, { id: cardId }); return card; }); }
+function addCard(deckId, card) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck || hasCardIdentity(deck.cards, card)) return null; const saved = { id: createId('card'), ...card }; deck.cards.push(saved); return saved; }); }
+function updateCard(deckId, cardId, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); const card = deck?.cards.find((item) => item.id === cardId); if (!card || hasCardIdentity(deck.cards, updates, cardId)) return null; Object.assign(card, updates, { id: cardId }); return card; }); }
 function deleteCards(deckId, cardIds) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck) return false; const ids = new Set(cardIds); deck.cards = deck.cards.filter((card) => !ids.has(card.id)); return true; }); }
 
 window.RecallDeckStorage = { STORAGE_KEY, createId, loadDecks, saveDecks, getDeckById, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards };
