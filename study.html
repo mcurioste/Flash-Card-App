@@ -23,7 +23,10 @@
         <p class="eyebrow"><span></span><b id="deck-label"></b></p>
         <h1><span id="deck-title"></span> <em id="deck-title-accent"></em></h1>
         <p id="deck-description"></p>
-        <button class="add-card-button" id="add-card-button" type="button">+ Add a card</button>
+        <div class="deck-actions">
+          <button class="add-card-button" id="add-card-button" type="button">+ Add a card</button>
+          <button class="delete-card-button" id="delete-card-button" type="button">Delete cards</button>
+        </div>
       </div>
       <section class="study-workspace" aria-label="Flashcard study session">
         <div class="session-progress" aria-live="polite">
@@ -63,19 +66,38 @@
           </div>
           <button class="dialog-close" id="close-add-card" type="button" aria-label="Close add card form">&times;</button>
         </div>
-        <p class="form-intro">Complete every field. You can add up to 10 cards during this study session.</p>
+        <p class="form-intro" id="deck-capacity-message">Complete every field.</p>
         <div class="card-fields">
           <label>Word<input name="word" type="text" lang="ja" placeholder="食べる" required /></label>
-          <label>Reading<input name="reading" type="text" lang="ja" placeholder="たべる"　required /></label>
+          <label>Reading<input name="reading" type="text" lang="ja" placeholder="たべる" required /></label>
           <label>Type<input name="type" type="text" placeholder="NOUN, VERB, etc." required /></label>
-          <label>Meaning<input name="meaning" type="text"　 placeholder="To eat" required /></label>
+          <label>Meaning<input name="meaning" type="text" placeholder="To eat" required /></label>
           <label class="full-field">Example sentence<input name="example" type="text" lang="ja" placeholder="寿司を食べる。" required /></label>
           <label class="full-field">Example translation<input name="translation" type="text" placeholder="I eat breakfast" required /></label>
         </div>
         <p class="form-message" id="add-card-message" aria-live="polite"></p>
         <div class="form-actions">
-          <span id="custom-card-count">0 of 10 custom cards added</span>
+          <span id="deck-card-count">9 of 19 cards in deck</span>
           <button class="save-card-button" type="submit">Add to deck</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog class="add-card-dialog delete-card-dialog" id="delete-card-dialog" aria-labelledby="delete-card-title">
+      <form id="delete-card-form">
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow"><span></span>Starter deck</p>
+            <h2 id="delete-card-title">Delete cards</h2>
+          </div>
+          <button class="dialog-close" id="close-delete-card" type="button" aria-label="Close delete cards form">&times;</button>
+        </div>
+        <p class="form-intro">Choose one or more cards to remove from this session.</p>
+        <label class="select-all-cards"><input id="select-all-cards" type="checkbox" /> Select all cards</label>
+        <div class="delete-card-list" id="delete-card-list"></div>
+        <p class="form-message" id="delete-card-message" aria-live="polite"></p>
+        <div class="form-actions">
+          <span id="selected-card-count">0 cards selected</span>
+          <button class="confirm-delete-button" id="confirm-delete-button" type="submit" disabled>Delete selected</button>
         </div>
       </form>
     </dialog>

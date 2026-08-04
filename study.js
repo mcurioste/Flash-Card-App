@@ -8,6 +8,7 @@ const decks = [
     language: '日本語',
     level: 'BEGINNER',
     prompt: 'WHAT DOES THIS WORD MEAN?',
+    maxCards: 19,
     cards: [
       { word: '猫', reading: 'ねこ', type: 'NOUN', meaning: 'cat', example: '猫が好きです。', translation: 'I like cats.' },
       { word: '水', reading: 'みず', type: 'NOUN', meaning: 'water', example: '水を飲みます。', translation: 'I drink water.' },
@@ -35,9 +36,17 @@ const addCardDialog = document.querySelector('#add-card-dialog');
 const addCardForm = document.querySelector('#add-card-form');
 const closeAddCardButton = document.querySelector('#close-add-card');
 const addCardMessage = document.querySelector('#add-card-message');
-const customCardCount = document.querySelector('#custom-card-count');
-const maxCustomCards = 10;
-let customCardsAdded = 0;
+const deckCardCount = document.querySelector('#deck-card-count');
+const deckCapacityMessage = document.querySelector('#deck-capacity-message');
+const deleteCardButton = document.querySelector('#delete-card-button');
+const deleteCardDialog = document.querySelector('#delete-card-dialog');
+const deleteCardForm = document.querySelector('#delete-card-form');
+const closeDeleteCardButton = document.querySelector('#close-delete-card');
+const deleteCardList = document.querySelector('#delete-card-list');
+const deleteCardMessage = document.querySelector('#delete-card-message');
+const selectAllCards = document.querySelector('#select-all-cards');
+const selectedCardCount = document.querySelector('#selected-card-count');
+const confirmDeleteButton = document.querySelector('#confirm-delete-button');
 let currentIndex = 0;
 
 function renderDeck() {
@@ -50,9 +59,30 @@ function renderDeck() {
   document.querySelector('#card-language').textContent = selectedDeck.language;
   document.querySelector('#card-level').textContent = selectedDeck.level;
   document.querySelector('#card-prompt').textContent = selectedDeck.prompt;
+  deckCapacityMessage.textContent = Number.isFinite(selectedDeck.maxCards)
+    ? `Complete every field. This starter deck can contain up to ${selectedDeck.maxCards} cards during this study session.`
+    : 'Complete every field. This deck does not have a card limit.';
 }
 
 function renderCard() {
+  if (cards.length === 0) {
+    card.classList.remove('revealed');
+    document.querySelector('#card-word').textContent = 'No cards';
+    document.querySelector('#card-reading').textContent = '';
+    document.querySelector('#card-type').textContent = 'EMPTY DECK';
+    document.querySelector('#card-meaning').textContent = 'Add a card to keep studying.';
+    document.querySelector('#card-example').textContent = '';
+    document.querySelector('#card-translation').textContent = '';
+    document.querySelector('#card-count').textContent = '00 / 00';
+    document.querySelector('#progress-text').textContent = 'No cards in deck';
+    document.querySelector('#progress-percent').textContent = '0%';
+    document.querySelector('#progress-bar').style.width = '0%';
+    revealButton.disabled = true;
+    previousButton.disabled = true;
+    nextButton.disabled = true;
+    return;
+  }
+
   const current = cards[currentIndex];
   const position = currentIndex + 1;
   const percentage = Math.round((position / cards.length) * 100);
@@ -60,6 +90,7 @@ function renderCard() {
   revealButton.textContent = 'Reveal answer';
   revealButton.setAttribute('aria-expanded', 'false');
   answer.setAttribute('aria-hidden', 'true');
+  revealButton.disabled = false;
   document.querySelector('#card-word').textContent = current.word;
   document.querySelector('#card-reading').textContent = current.reading;
   document.querySelector('#card-type').textContent = current.type;
@@ -73,36 +104,58 @@ function renderCard() {
   previousButton.disabled = currentIndex === 0;
   nextButton.disabled = currentIndex === cards.length - 1;
 }
+
 function toggleAnswer() {
   const revealed = card.classList.toggle('revealed');
   revealButton.textContent = revealed ? 'Hide answer' : 'Reveal answer';
   revealButton.setAttribute('aria-expanded', String(revealed));
   answer.setAttribute('aria-hidden', String(!revealed));
 }
+
 function moveCard(direction) {
   const nextIndex = currentIndex + direction;
   if (nextIndex < 0 || nextIndex >= cards.length) return;
   currentIndex = nextIndex;
   renderCard();
 }
+
 function updateAddCardControls() {
-  const limitReached = customCardsAdded >= maxCustomCards;
-  customCardCount.textContent = `${customCardsAdded} of ${maxCustomCards} custom cards added`;
+  const limitReached = Number.isFinite(selectedDeck.maxCards) && cards.length >= selectedDeck.maxCards;
+  deckCardCount.textContent = Number.isFinite(selectedDeck.maxCards)
+    ? `${cards.length} of ${selectedDeck.maxCards} cards in deck`
+    : `${cards.length} cards in deck`;
   addCardButton.disabled = limitReached;
   addCardButton.textContent = limitReached ? 'Card limit reached' : '+ Add a card';
+  deleteCardButton.disabled = cards.length === 0;
 }
+
 function openAddCardForm() {
   addCardMessage.textContent = '';
   addCardDialog.showModal();
   addCardForm.elements.word.focus();
 }
+
 function closeAddCardForm() {
   addCardDialog.close();
 }
+
+// These mutation functions are the storage boundary. They can later call an
+// API without changing the dialogs or study-card rendering code.
+function addCardToDeck(newCard) {
+  cards.push(newCard);
+}
+
+function deleteCardsFromDeck(indexes) {
+  [...indexes].sort((a, b) => b - a).forEach((index) => {
+    cards.splice(index, 1);
+  });
+}
+
 function addCard(event) {
   event.preventDefault();
-  if (customCardsAdded >= maxCustomCards) {
-    addCardMessage.textContent = 'You have reached the 10-card limit for this session.';
+
+  if (Number.isFinite(selectedDeck.maxCards) && cards.length >= selectedDeck.maxCards) {
+    addCardMessage.textContent = `This deck has reached its ${selectedDeck.maxCards}-card limit.`;
     return;
   }
 
@@ -121,14 +174,82 @@ function addCard(event) {
     return;
   }
 
-  cards.push(newCard);
-  customCardsAdded += 1;
+  addCardToDeck(newCard);
   currentIndex = cards.length - 1;
   addCardForm.reset();
   updateAddCardControls();
   closeAddCardForm();
   renderCard();
 }
+
+function getSelectedCardIndexes() {
+  return [...deleteCardList.querySelectorAll('input[name="cards-to-delete"]:checked')]
+    .map((input) => Number(input.value));
+}
+
+function renderDeleteCardList() {
+  deleteCardList.replaceChildren();
+
+  cards.forEach((deckCard, index) => {
+    const option = document.createElement('label');
+    option.className = 'delete-card-option';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'cards-to-delete';
+    checkbox.value = String(index);
+
+    const identity = document.createElement('span');
+    const word = document.createElement('strong');
+    const details = document.createElement('small');
+    word.textContent = deckCard.word;
+    details.textContent = `${deckCard.reading} · ${deckCard.type}`;
+    identity.append(word, document.createElement('br'), details);
+
+    const meaning = document.createElement('span');
+    meaning.className = 'card-list-meaning';
+    meaning.textContent = deckCard.meaning;
+    option.append(checkbox, identity, meaning);
+    deleteCardList.append(option);
+  });
+}
+
+function updateDeleteSelection() {
+  const selectedCount = getSelectedCardIndexes().length;
+  selectedCardCount.textContent = `${selectedCount} ${selectedCount === 1 ? 'card' : 'cards'} selected`;
+  confirmDeleteButton.disabled = selectedCount === 0;
+  selectAllCards.checked = cards.length > 0 && selectedCount === cards.length;
+  selectAllCards.indeterminate = selectedCount > 0 && selectedCount < cards.length;
+}
+
+function openDeleteCardForm() {
+  deleteCardMessage.textContent = '';
+  selectAllCards.checked = false;
+  selectAllCards.indeterminate = false;
+  renderDeleteCardList();
+  updateDeleteSelection();
+  deleteCardDialog.showModal();
+}
+
+function closeDeleteCardForm() {
+  deleteCardDialog.close();
+}
+
+function deleteSelectedCards(event) {
+  event.preventDefault();
+  const indexes = getSelectedCardIndexes();
+  if (indexes.length === 0) {
+    deleteCardMessage.textContent = 'Select at least one card to delete.';
+    return;
+  }
+
+  deleteCardsFromDeck(indexes);
+  currentIndex = Math.min(currentIndex, Math.max(cards.length - 1, 0));
+  closeDeleteCardForm();
+  updateAddCardControls();
+  renderCard();
+}
+
 revealButton.addEventListener('click', toggleAnswer);
 previousButton.addEventListener('click', () => moveCard(-1));
 nextButton.addEventListener('click', () => moveCard(1));
@@ -138,12 +259,31 @@ addCardForm.addEventListener('submit', addCard);
 addCardDialog.addEventListener('click', (event) => {
   if (event.target === addCardDialog) closeAddCardForm();
 });
+deleteCardButton.addEventListener('click', openDeleteCardForm);
+closeDeleteCardButton.addEventListener('click', closeDeleteCardForm);
+deleteCardForm.addEventListener('submit', deleteSelectedCards);
+deleteCardList.addEventListener('change', updateDeleteSelection);
+selectAllCards.addEventListener('change', () => {
+  deleteCardList.querySelectorAll('input[name="cards-to-delete"]').forEach((input) => {
+    input.checked = selectAllCards.checked;
+  });
+  updateDeleteSelection();
+});
+deleteCardDialog.addEventListener('click', (event) => {
+  if (event.target === deleteCardDialog) closeDeleteCardForm();
+});
 document.addEventListener('keydown', (event) => {
   if (event.target !== document.body) return;
-  if (event.key === ' ') { event.preventDefault(); toggleAnswer(); }
-  else if (event.key === 'ArrowLeft') moveCard(-1);
-  else if (event.key === 'ArrowRight') moveCard(1);
+  if (event.key === ' ') {
+    event.preventDefault();
+    toggleAnswer();
+  } else if (event.key === 'ArrowLeft') {
+    moveCard(-1);
+  } else if (event.key === 'ArrowRight') {
+    moveCard(1);
+  }
 });
+
 renderDeck();
 renderCard();
 updateAddCardControls();

@@ -9,9 +9,13 @@
 .deck-heading h1 { font-size: clamp(43px, 5vw, 68px); }
 .deck-heading h1 em { color: var(--forest); }
 #deck-description { margin: 17px 0 0; color: var(--muted); font-size: 13px; }
-.add-card-button { margin-top: 24px; padding: 12px 18px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
+.deck-actions { display: flex; justify-content: center; gap: 10px; margin-top: 24px; }
+.add-card-button { padding: 12px 18px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
 .add-card-button:hover { color: var(--forest); background: var(--lime); }
 .add-card-button:disabled { opacity: .45; cursor: not-allowed; }
+.delete-card-button { padding: 12px 18px; border: 1px solid #9a4f43; color: #9a4f43; background: transparent; cursor: pointer; font-size: 11px; font-weight: 700; }
+.delete-card-button:hover { color: var(--white); background: #9a4f43; }
+.delete-card-button:disabled { opacity: .45; cursor: not-allowed; }
 .study-workspace { width: min(620px, 100%); margin: 42px auto 0; }
 .session-progress { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; margin-bottom: 16px; color: var(--muted); font: 500 9px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
 .progress-track { height: 2px; overflow: hidden; background: var(--cream); }
@@ -52,6 +56,17 @@ kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font:
 .form-actions { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 8px; border-top: 1px solid var(--line); }
 .form-actions span { color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
 .save-card-button { padding: 13px 20px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
+.delete-card-dialog { width: min(620px, calc(100% - 32px)); }
+.select-all-cards { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); background: var(--paper); font: 500 10px "DM Mono", monospace; text-transform: uppercase; }
+.delete-card-list { max-height: 320px; margin: 10px 0 0; overflow-y: auto; border: 1px solid var(--line); }
+.delete-card-option { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 13px; padding: 14px; cursor: pointer; }
+.delete-card-option + .delete-card-option { border-top: 1px solid var(--line); }
+.delete-card-option:hover { background: var(--paper); }
+.delete-card-option strong { font-size: 16px; font-weight: 600; }
+.delete-card-option small { color: var(--muted); font: 500 9px "DM Mono", monospace; text-transform: uppercase; }
+.delete-card-option .card-list-meaning { color: var(--muted); font-size: 12px; }
+.confirm-delete-button { padding: 13px 20px; border: 1px solid #9a4f43; color: var(--white); background: #9a4f43; cursor: pointer; font-size: 11px; font-weight: 700; }
+.confirm-delete-button:disabled { opacity: .4; cursor: not-allowed; }
 @media (max-width: 600px) {
   .study-header { height: 72px; padding: 0 20px; }
   .study-main { padding: 42px 16px 50px; }
@@ -65,4 +80,7 @@ kbd { padding: 2px 4px; border: 1px solid var(--line); border-radius: 2px; font:
   .card-fields { grid-template-columns: 1fr; }
   .full-field { grid-column: auto; }
   .form-actions { align-items: stretch; flex-direction: column; }
+  .deck-actions { align-items: stretch; flex-direction: column; width: min(260px, 100%); margin-right: auto; margin-left: auto; }
+  .delete-card-option { grid-template-columns: auto 1fr; }
+  .delete-card-option .card-list-meaning { grid-column: 2; }
 }
