@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Recall is a browser-based flashcard application for creating decks and studying with keyboard controls."
+      content="Recall is a browser-based Japanese flashcard application with multiple-choice tests and keyboard-friendly study controls."
     />
     <title>Recall — Learn it for good</title>
     <link rel="stylesheet" href="styles.css" />
@@ -35,15 +35,19 @@
     <main>
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow"><span></span> Browser-based flashcards</p>
+          <p class="eyebrow"><span></span> Japanese study flashcards</p>
           <h1 id="hero-title">Learn it.<br /><em>Keep it.</em></h1>
           <p class="hero-description">
-            Create multiple decks, manage every card, and study at your own pace. Your work is
-            saved locally in the current browser.
+            Build Japanese vocabulary decks, practice readings and meanings, and test what you
+            remember at your own pace. Everything works directly in your browser.
           </p>
           <div class="hero-actions">
             <a class="button" href="decks.html">View my decks<span aria-hidden="true">↗</span></a>
             <a class="text-link" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a>
+          </div>
+          <div class="local-save-summary">
+            <span aria-hidden="true">✓</span>
+            <p><strong>Your decks save automatically.</strong> No account is needed—Recall stores your changes in this browser on this device.</p>
           </div>
         </div>
 
@@ -101,21 +105,76 @@
           <article class="step">
             <span class="step-number">01</span>
             <div class="step-icon">＋</div>
-            <h3>Make it yours</h3>
-            <p>Create custom decks and add text-based cards, or begin with the Japanese starter deck.</p>
+            <h3>Create your decks</h3>
+            <p>Group Japanese vocabulary by JLPT level, lesson, textbook, or topic.</p>
+            <ul class="feature-details">
+              <li>Start with the included Japanese deck</li>
+              <li>Add readings, meanings, word types, and examples</li>
+            </ul>
           </article>
           <article class="step featured-step">
             <span class="step-number">02</span>
             <div class="step-icon">◒</div>
-            <h3>Study without clutter</h3>
-            <p>Reveal answers and move through a selected deck with clear controls or the keyboard.</p>
+            <h3>Practice at your pace</h3>
+            <p>Think through each prompt first, then reveal the answer when you are ready to check it.</p>
+            <ul class="feature-details">
+              <li>Press Space to reveal or hide an answer</li>
+              <li>Use the arrow keys to change cards</li>
+            </ul>
           </article>
           <article class="step">
             <span class="step-number">03</span>
             <div class="step-icon">↗</div>
-            <h3>Keep it organized</h3>
-            <p>Edit or delete cards and decks. Changes remain available after a browser refresh.</p>
+            <h3>Manage your collection</h3>
+            <p>Update cards as your notes improve, or remove anything you no longer need.</p>
+            <ul class="feature-details">
+              <li>Edit or delete individual and multiple cards</li>
+              <li>Changes save automatically in this browser</li>
+            </ul>
           </article>
+        </div>
+        <aside class="storage-note" aria-labelledby="storage-note-title">
+          <span class="storage-note-icon" aria-hidden="true">i</span>
+          <div>
+            <h3 id="storage-note-title">About browser storage</h3>
+            <p>Recall does not need an account. Your decks are stored only on this device and in this browser, so they will not sync elsewhere. Clearing this site’s browser data will also remove your custom decks.</p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="test-section" aria-labelledby="test-title">
+        <div class="test-copy">
+          <p class="eyebrow"><span></span> Test mode</p>
+          <h2 id="test-title">Multiple choice <em>test.</em></h2>
+          <p class="test-intro">Turn any Japanese deck with at least four cards into a quick meaning test. Recall shows one Japanese word and four possible English meanings—choose the answer you think is correct.</p>
+          <div class="test-features">
+            <article>
+              <span aria-hidden="true">01</span>
+              <div><h3>Four answer options</h3><p>One correct meaning is mixed with three meanings from other cards in the same deck.</p></div>
+            </article>
+            <article>
+              <span aria-hidden="true">02</span>
+              <div><h3>Instant feedback</h3><p>See the correct choice immediately, then track your score and current answer streak.</p></div>
+            </article>
+            <article>
+              <span aria-hidden="true">03</span>
+              <div><h3>Shuffle your cards</h3><p>Turn on Shuffle before studying to practice the deck in a fresh random order instead of the order you added it.</p></div>
+            </article>
+          </div>
+        </div>
+
+        <div class="test-preview" aria-label="Example multiple choice question">
+          <div class="test-preview-top"><span>日本語 · SAMPLE TEST</span><span>3 / 9</span></div>
+          <p class="prompt-label">CHOOSE THE CORRECT MEANING</p>
+          <h3 lang="ja">懐かしい</h3>
+          <div class="preview-options">
+            <span>beautiful</span>
+            <span class="preview-correct">nostalgic <b aria-hidden="true">✓</b></span>
+            <span>difficult</span>
+            <span>quiet</span>
+          </div>
+          <div class="preview-score"><span>Score <b>3 / 3</b></span><span>Streak <b>3</b></span></div>
+          <p class="shuffle-preview"><span aria-hidden="true">↝</span> Shuffle cards for a new order</p>
         </div>
       </section>
 
