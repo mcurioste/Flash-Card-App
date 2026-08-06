@@ -32,6 +32,13 @@
           <button class="edit-card-button" id="edit-card-button" type="button">Edit cards</button>
           <button class="delete-card-button" id="delete-card-button" type="button">Delete cards</button>
         </div>
+        <fieldset class="study-mode-picker" aria-label="Choose a study mode">
+          <legend>Choose your mode</legend>
+          <label><input type="radio" name="study-mode" value="flashcards" checked /><span><b>Flashcards</b><small>Reveal answers at your own pace</small></span></label>
+          <label id="choice-mode-label"><input type="radio" name="study-mode" value="choice" /><span><b>4 choices</b><small>Pick the correct meaning</small></span></label>
+        </fieldset>
+        <label class="shuffle-control"><input id="shuffle-cards" type="checkbox" /><span>Shuffle cards</span><small>Off uses the order cards were added</small></label>
+        <p class="mode-message" id="mode-message" aria-live="polite"></p>
       </div>
       <section class="study-workspace" aria-label="Flashcard study session">
         <div class="session-progress" aria-live="polite">
@@ -52,9 +59,12 @@
               <p class="meaning" id="card-meaning"></p>
               <p class="example"><span id="card-example" lang="ja"></span><br /><span id="card-translation"></span></p>
             </div>
+            <div class="choice-test" id="choice-test" hidden aria-label="Answer choices"></div>
+            <p class="test-feedback" id="test-feedback" aria-live="polite"></p>
           </div>
           <button class="study-reveal-button" id="study-reveal-button" type="button" aria-controls="learning-answer" aria-expanded="false">Reveal answer</button>
         </article>
+        <div class="test-score" id="test-score" hidden aria-live="polite"><span>Score <b id="score-value">0 / 0</b></span><span>Streak <b id="streak-value">0</b></span></div>
         <div class="card-navigation" aria-label="Card navigation">
           <button class="nav-card-button" id="previous-card" type="button"><span aria-hidden="true">←</span> Previous</button>
           <p><kbd>Space</kbd> reveal <span>·</span> <kbd>←</kbd> <kbd>→</kbd> move</p>
