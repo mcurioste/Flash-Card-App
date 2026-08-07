@@ -4,12 +4,12 @@ const $ = (s) => document.querySelector(s);
 const deckId = new URLSearchParams(location.search).get('deck');
 let deck = deckId ? getDeckById(deckId) : null;
 let cards = deck?.cards ?? [], index = 0, editingId = null;
-let mode = 'flashcards', answered = false, correctAnswers = 0, attempts = 0, streak = 0;
+let mode = 'flashcards', answered = false, selectedChoice = null, correctAnswers = 0, attempts = 0, streak = 0;
 const card = $('#learning-card'), answer = $('#learning-answer'), reveal = $('#study-reveal-button');
 const previous = $('#previous-card'), next = $('#next-card'), add = $('#add-card-button'), edit = $('#edit-card-button'), remove = $('#delete-card-button');
 const addDialog = $('#add-card-dialog'), editListDialog = $('#edit-card-list-dialog'), editDialog = $('#edit-card-dialog'), deleteDialog = $('#delete-card-dialog');
 const addForm = $('#add-card-form'), editForm = $('#edit-card-form');
-const choiceTest = $('#choice-test'), feedback = $('#test-feedback');
+const choiceTest = $('#choice-test'), choiceSubmit = $('#choice-submit-button'), feedback = $('#test-feedback');
 const fields = ['word', 'reading', 'type', 'meaning', 'example', 'translation'];
 const shuffle = (items) => { const copy = [...items]; for (let i = copy.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; };
 function refresh() { deck = getDeckById(deckId); cards = deck?.cards ?? []; if ($('#shuffle-cards')?.checked) cards = shuffle(cards); }
@@ -17,24 +17,25 @@ function close(dialog) { if (dialog.open) dialog.close(); }
 function formValues(form) { const data = new FormData(form); return Object.fromEntries(fields.map((field) => [field, String(data.get(field)).trim()])); }
 function hideAnswer() { card.classList.remove('revealed'); reveal.textContent = 'Reveal answer'; reveal.setAttribute('aria-expanded', 'false'); answer.setAttribute('aria-hidden', 'true'); }
 function updateScore() { $('#score-value').textContent = `${correctAnswers} / ${attempts}`; $('#streak-value').textContent = streak; }
-function resetQuestion() { answered = false; feedback.textContent = ''; feedback.className = 'test-feedback'; }
+function resetQuestion() { answered = false; selectedChoice = null; feedback.textContent = ''; feedback.className = 'test-feedback'; choiceSubmit.textContent = 'Submit answer'; choiceSubmit.disabled = true; }
 function buildChoices(current) {
   choiceTest.replaceChildren();
   const distractors = shuffle(cards.filter((item) => item.id !== current.id)).slice(0, 3);
-  shuffle([current, ...distractors]).forEach((item) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'choice-option'; button.textContent = item.meaning; button.dataset.correct = String(item.id === current.id); choiceTest.append(button); });
+  shuffle([current, ...distractors]).forEach((item) => { const button = document.createElement('button'); button.type = 'button'; button.className = 'choice-option'; button.textContent = item.meaning; button.dataset.correct = String(item.id === current.id); button.setAttribute('aria-pressed', 'false'); choiceTest.append(button); });
 }
 function markAnswer(correct) {
   if (answered) return;
   answered = true; attempts += 1; correctAnswers += Number(correct); streak = correct ? streak + 1 : 0; updateScore();
   feedback.textContent = correct ? 'Correct!' : `Not quite. The answer is “${cards[index].meaning}”.`;
   feedback.className = `test-feedback ${correct ? 'correct' : 'incorrect'}`;
-  reveal.textContent = 'Next card'; reveal.disabled = false;
+  choiceSubmit.textContent = 'Next card'; choiceSubmit.disabled = false;
 }
 function renderMode() {
   if (mode === 'choice' && cards.length < 4) { mode = 'flashcards'; document.querySelector('input[name="study-mode"][value="flashcards"]').checked = true; $('#mode-message').textContent = '4 choices was stopped because this deck now has fewer than 4 cards.'; }
   const testing = mode !== 'flashcards';
   choiceTest.hidden = mode !== 'choice' || !cards.length;
-  $('#test-score').hidden = !testing; answer.hidden = testing; reveal.hidden = testing && !answered;
+  choiceSubmit.hidden = mode !== 'choice' || !cards.length;
+  $('#test-score').hidden = !testing; answer.hidden = testing; reveal.hidden = testing;
   $('.card-navigation').hidden = testing;
   if (testing && cards.length) { resetQuestion(); if (mode === 'choice') buildChoices(cards[index]); }
 }
@@ -54,7 +55,20 @@ function changeMode(nextMode) {
   else { mode = nextMode; $('#mode-message').textContent = ''; }
   index = 0; renderCard();
 }
-function chooseAnswer(event) { const button = event.target.closest('.choice-option'); if (!button || answered) return; const correct = button.dataset.correct === 'true'; choiceTest.querySelectorAll('button').forEach((option) => { option.disabled = true; if (option.dataset.correct === 'true') option.classList.add('correct'); }); if (!correct) button.classList.add('incorrect'); markAnswer(correct); }
+function chooseAnswer(event) {
+  const button = event.target.closest('.choice-option');
+  if (!button || answered) return;
+  choiceTest.querySelectorAll('.choice-option').forEach((option) => { option.classList.remove('selected'); option.setAttribute('aria-pressed', 'false'); });
+  selectedChoice = button; button.classList.add('selected'); button.setAttribute('aria-pressed', 'true'); choiceSubmit.disabled = false;
+}
+function submitChoice() {
+  if (answered) { advanceTest(); return; }
+  if (!selectedChoice) return;
+  const correct = selectedChoice.dataset.correct === 'true';
+  choiceTest.querySelectorAll('.choice-option').forEach((option) => { option.disabled = true; if (option.dataset.correct === 'true') option.classList.add('correct'); });
+  if (!correct) selectedChoice.classList.add('incorrect');
+  markAnswer(correct);
+}
 function advanceTest() {
   if (!answered) return;
   index = (index + 1) % cards.length; renderCard();
@@ -79,6 +93,7 @@ function deleteSelected(event) { event.preventDefault(); const ids = selectedIds
 reveal.addEventListener('click', () => { if (mode === 'flashcards') toggle(); else advanceTest(); }); previous.addEventListener('click', () => move(-1)); next.addEventListener('click', () => move(1)); add.addEventListener('click', openAdd); addForm.addEventListener('submit', saveAdd); edit.addEventListener('click', openEditList); editForm.addEventListener('submit', saveEdit); remove.addEventListener('click', openDelete); $('#delete-card-form').addEventListener('submit', deleteSelected);
 document.querySelectorAll('input[name="study-mode"]').forEach((input) => input.addEventListener('change', () => changeMode(input.value)));
 choiceTest.addEventListener('click', chooseAnswer);
+choiceSubmit.addEventListener('click', submitChoice);
 $('#shuffle-cards').addEventListener('change', toggleShuffle);
 $('#edit-card-list').addEventListener('click', (event) => { const button = event.target.closest('.edit-one-card-button'); if (button) openEdit(button.dataset.cardId); }); $('#delete-card-list').addEventListener('change', updateSelection); $('#select-all-cards').addEventListener('change', (event) => { $('#delete-card-list').querySelectorAll('input').forEach((input) => { input.checked = event.target.checked; }); updateSelection(); });
 [['#close-add-card',addDialog],['#close-edit-card-list',editListDialog],['#close-edit-card',editDialog],['#close-delete-card',deleteDialog]].forEach(([selector, dialog]) => $(selector).addEventListener('click', () => close(dialog))); $('#back-to-edit-list').addEventListener('click', () => { close(editDialog); editingId = null; openEditList(); }); [addDialog, editListDialog, editDialog, deleteDialog].forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) close(dialog); }));
