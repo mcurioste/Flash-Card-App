@@ -45,10 +45,6 @@
             <a class="button" href="decks.html">View my decks<span aria-hidden="true">↗</span></a>
             <a class="text-link" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a>
           </div>
-          <div class="local-save-summary">
-            <span aria-hidden="true">✓</span>
-            <p><strong>Your decks save automatically.</strong> No account is needed—Recall stores your changes in this browser on this device.</p>
-          </div>
         </div>
 
         <div class="hero-visual" aria-label="Interactive flashcard demo">
@@ -101,21 +97,21 @@
           <p class="eyebrow"><span></span> The workflow</p>
           <h2 id="process-title">Simple tools.<br /><em>Focused study.</em></h2>
         </div>
-        <div class="steps" id="features">
+        <div class="steps">
           <article class="step">
             <span class="step-number">01</span>
-            <div class="step-icon">＋</div>
-            <h3>Create your decks</h3>
-            <p>Group Japanese vocabulary by JLPT level, lesson, textbook, or topic.</p>
+            <div class="step-icon" aria-hidden="true">＋</div>
+            <h3>Create a deck</h3>
+            <p>Build a focused collection for a JLPT level, lesson, textbook, or topic.</p>
             <ul class="feature-details">
               <li>Start with the included Japanese deck</li>
               <li>Add readings, meanings, word types, and examples</li>
             </ul>
           </article>
-          <article class="step featured-step">
+          <article class="step">
             <span class="step-number">02</span>
-            <div class="step-icon">◒</div>
-            <h3>Practice at your pace</h3>
+            <div class="step-icon" aria-hidden="true">◒</div>
+            <h3>Study with flashcards</h3>
             <p>Think through each prompt first, then reveal the answer when you are ready to check it.</p>
             <ul class="feature-details">
               <li>Press Space to reveal or hide an answer</li>
@@ -124,57 +120,71 @@
           </article>
           <article class="step">
             <span class="step-number">03</span>
-            <div class="step-icon">↗</div>
-            <h3>Manage your collection</h3>
-            <p>Update cards as your notes improve, or remove anything you no longer need.</p>
+            <div class="step-icon" aria-hidden="true">✓</div>
+            <h3>Test your knowledge</h3>
+            <p>Turn any deck with at least four cards into a quick multiple-choice meaning test.</p>
             <ul class="feature-details">
-              <li>Edit or delete individual and multiple cards</li>
-              <li>Changes save automatically in this browser</li>
+              <li>Choose from four answers with instant feedback</li>
+              <li>Track your score and streak as you go</li>
             </ul>
           </article>
         </div>
-        <aside class="storage-note" aria-labelledby="storage-note-title">
-          <span class="storage-note-icon" aria-hidden="true">i</span>
-          <div>
-            <h3 id="storage-note-title">About browser storage</h3>
-            <p>Recall does not need an account. Your decks are stored only on this device and in this browser, so they will not sync elsewhere. Clearing this site’s browser data will also remove your custom decks.</p>
+
+        <div class="test-preview compact-test-preview" aria-label="Example multiple-choice question">
+          <div class="test-preview-top"><span>日本語 · SAMPLE TEST</span><span>3 / 9</span></div>
+          <div class="compact-question">
+            <div>
+              <p class="prompt-label">CHOOSE THE CORRECT MEANING</p>
+              <h3 lang="ja">懐かしい</h3>
+            </div>
+            <div class="preview-options">
+              <span>beautiful</span>
+              <span class="preview-correct">nostalgic <b aria-hidden="true">✓</b></span>
+              <span>difficult</span>
+              <span>quiet</span>
+            </div>
           </div>
-        </aside>
+          <div class="preview-score"><span>Score <b>3 / 3</b></span><span>Streak <b>3</b></span><span><b aria-hidden="true">↝</b> Shuffle on</span></div>
+        </div>
       </section>
 
-      <section class="test-section" aria-labelledby="test-title">
-        <div class="test-copy">
-          <p class="eyebrow"><span></span> Test mode</p>
-          <h2 id="test-title">Multiple choice <em>test.</em></h2>
-          <p class="test-intro">Turn any Japanese deck with at least four cards into a quick meaning test. Recall shows one Japanese word and four possible English meanings—choose the answer you think is correct.</p>
-          <div class="test-features">
-            <article>
-              <span aria-hidden="true">01</span>
-              <div><h3>Four answer options</h3><p>One correct meaning is mixed with three meanings from other cards in the same deck.</p></div>
-            </article>
-            <article>
-              <span aria-hidden="true">02</span>
-              <div><h3>Instant feedback</h3><p>See the correct choice immediately, then track your score and current answer streak.</p></div>
-            </article>
-            <article>
-              <span aria-hidden="true">03</span>
-              <div><h3>Shuffle your cards</h3><p>Turn on Shuffle before studying to practice the deck in a fresh random order instead of the order you added it.</p></div>
-            </article>
-          </div>
+      <section class="simple-section" id="features" aria-labelledby="simple-title">
+        <div class="simple-heading">
+          <p class="eyebrow"><span></span> Features</p>
+          <h2 id="simple-title">Everything you need to build and review your vocabulary</h2>
+          <p>Create useful study material, review it at your pace, and check your progress with focused tools that stay out of the way.</p>
         </div>
-
-        <div class="test-preview" aria-label="Example multiple choice question">
-          <div class="test-preview-top"><span>日本語 · SAMPLE TEST</span><span>3 / 9</span></div>
-          <p class="prompt-label">CHOOSE THE CORRECT MEANING</p>
-          <h3 lang="ja">懐かしい</h3>
-          <div class="preview-options">
-            <span>beautiful</span>
-            <span class="preview-correct">nostalgic <b aria-hidden="true">✓</b></span>
-            <span>difficult</span>
-            <span>quiet</span>
-          </div>
-          <div class="preview-score"><span>Score <b>3 / 3</b></span><span>Streak <b>3</b></span></div>
-          <p class="shuffle-preview"><span aria-hidden="true">↝</span> Shuffle cards for a new order</p>
+        <div class="simple-features">
+          <article>
+            <span class="simple-feature-icon" aria-hidden="true">▤</span>
+            <h3>Multiple decks</h3>
+            <p>Create separate decks for JLPT levels, textbooks, lessons, or personal topics.</p>
+          </article>
+          <article>
+            <span class="simple-feature-icon" aria-hidden="true">文</span>
+            <h3>Detailed cards</h3>
+            <p>Store the word, reading, meaning, word type, example sentence, and translation.</p>
+          </article>
+          <article>
+            <span class="simple-feature-icon" aria-hidden="true">◒</span>
+            <h3>Flexible study mode</h3>
+            <p>Reveal answers, move between cards, and shuffle the deck.</p>
+          </article>
+          <article>
+            <span class="simple-feature-icon" aria-hidden="true">✓</span>
+            <h3>Multiple-choice tests</h3>
+            <p>Turn decks with at least four cards into quick knowledge checks.</p>
+          </article>
+          <article>
+            <span class="simple-feature-icon" aria-hidden="true">↗</span>
+            <h3>Progress feedback</h3>
+            <p>Track the current score and answer streak during tests.</p>
+          </article>
+          <article>
+            <span class="simple-feature-icon" aria-hidden="true">●</span>
+            <h3>Automatic local saving</h3>
+            <p>Changes are saved in the browser without requiring an account.</p>
+          </article>
         </div>
       </section>
 
