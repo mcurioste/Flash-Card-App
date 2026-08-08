@@ -1,5 +1,6 @@
 (() => {
 const defaultDecks = window.RecallDefaultDecks;
+const { createTransfer, MAX_CARDS } = window.RecallDeckTransfer;
 const STORAGE_KEY = 'recallFlashcardDecks';
 const clone = (value) => JSON.parse(JSON.stringify(value));
 const comparisonKey = (value) => String(value).trim().normalize('NFKC').toLocaleLowerCase();
@@ -32,15 +33,22 @@ function normalizeDeck(deck) {
   const cards = deck.cards.map(normalizeCard).filter(Boolean);
   if (cards.length !== deck.cards.length) return null;
   return {
-    ...deck,
     id: deck.id,
     title: typeof deck.title === 'string' && deck.title.trim() ? deck.title : 'Untitled deck',
     description: typeof deck.description === 'string' ? deck.description : '',
     language: typeof deck.language === 'string' && deck.language.trim() ? deck.language : 'Unspecified',
     level: typeof deck.level === 'string' && deck.level.trim() ? deck.level : 'All levels',
     prompt: typeof deck.prompt === 'string' && deck.prompt ? deck.prompt : 'WHAT DOES THIS WORD MEAN?',
+    maxCards: deck.maxCards ?? null,
     cards
   };
+}
+
+function prepareDeck(deck) {
+  const normalized = normalizeDeck(clone(deck));
+  if (!normalized) throw new Error('Deck data is invalid.');
+  createTransfer(normalized);
+  return normalized;
 }
 
 function loadDecks() {
@@ -60,7 +68,10 @@ function loadDecks() {
   }
 }
 
-function saveDecks(decks) { localStorage.setItem(STORAGE_KEY, JSON.stringify(decks)); }
+function saveDecks(decks) {
+  if (!Array.isArray(decks)) throw new Error('Decks must be an array.');
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(decks.map(prepareDeck)));
+}
 function getDeckById(id) { return loadDecks().find((deck) => deck.id === id) ?? null; }
 
 function mutateDecks(mutation) {
@@ -75,9 +86,18 @@ function createDeck(metadata) {
 }
 function updateDeck(id, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === id); if (!deck || hasDeckTitle(decks, updates.title, id)) return null; Object.assign(deck, updates, { id, cards: deck.cards }); return deck; }); }
 function deleteDeck(id) { return mutateDecks((decks) => { const index = decks.findIndex((deck) => deck.id === id); if (index < 0) return false; decks.splice(index, 1); return true; }); }
-function addCard(deckId, card) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck || hasCardIdentity(deck.cards, card)) return null; const saved = { id: createId('card'), ...card }; deck.cards.push(saved); return saved; }); }
+function addCard(deckId, card) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck || hasCardIdentity(deck.cards, card)) return null; if (deck.cards.length >= MAX_CARDS) throw new Error(`A deck cannot contain more than ${MAX_CARDS} cards.`); const saved = { id: createId('card'), ...card }; deck.cards.push(saved); return saved; }); }
 function updateCard(deckId, cardId, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); const card = deck?.cards.find((item) => item.id === cardId); if (!card || hasCardIdentity(deck.cards, updates, cardId)) return null; Object.assign(card, updates, { id: cardId }); return card; }); }
 function deleteCards(deckId, cardIds) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck) return false; const ids = new Set(cardIds); deck.cards = deck.cards.filter((card) => !ids.has(card.id)); return true; }); }
+function importDeck(deck) {
+  return mutateDecks((decks) => {
+    if (decks.some((item) => item.id === deck.id) || hasDeckTitle(decks, deck.title)) return null;
+    const copy = normalizeDeck(clone(deck));
+    if (!copy) return null;
+    decks.push(copy);
+    return copy;
+  });
+}
 
-window.RecallDeckStorage = { STORAGE_KEY, createId, loadDecks, saveDecks, getDeckById, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards };
+window.RecallDeckStorage = { STORAGE_KEY, createId, loadDecks, saveDecks, getDeckById, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importDeck };
 })();

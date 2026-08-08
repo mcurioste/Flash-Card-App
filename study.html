@@ -86,12 +86,12 @@
         </div>
         <p class="form-intro" id="deck-capacity-message">Complete every field.</p>
         <div class="card-fields">
-          <label>Word<input name="word" type="text" lang="ja" placeholder="食べる" required /></label>
-          <label>Reading<input name="reading" type="text" lang="ja" placeholder="たべる" required /></label>
-          <label>Type<input name="type" type="text" placeholder="NOUN, VERB, etc." required /></label>
-          <label>Meaning<input name="meaning" type="text" placeholder="To eat" required /></label>
-          <label class="full-field">Example sentence<input name="example" type="text" lang="ja" placeholder="寿司を食べる。" required /></label>
-          <label class="full-field">Example translation<input name="translation" type="text" placeholder="I eat breakfast" required /></label>
+          <label>Word<input name="word" type="text" lang="ja" maxlength="1000" placeholder="食べる" required /></label>
+          <label>Reading<input name="reading" type="text" lang="ja" maxlength="1000" placeholder="たべる" required /></label>
+          <label>Type<input name="type" type="text" maxlength="1000" placeholder="NOUN, VERB, etc." required /></label>
+          <label>Meaning<input name="meaning" type="text" maxlength="1000" placeholder="To eat" required /></label>
+          <label class="full-field">Example sentence<input name="example" type="text" lang="ja" maxlength="1000" placeholder="寿司を食べる。" required /></label>
+          <label class="full-field">Example translation<input name="translation" type="text" maxlength="1000" placeholder="I eat breakfast" required /></label>
         </div>
         <p class="form-message" id="add-card-message" aria-live="polite"></p>
         <div class="form-actions">
@@ -124,12 +124,12 @@
         </div>
         <p class="form-intro">Update the card information below. Every field is required.</p>
         <div class="card-fields">
-          <label>Word<input name="word" type="text" lang="ja" required /></label>
-          <label>Reading<input name="reading" type="text" lang="ja" required /></label>
-          <label>Type<input name="type" type="text" required /></label>
-          <label>Meaning<input name="meaning" type="text" required /></label>
-          <label class="full-field">Example sentence<input name="example" type="text" lang="ja" required /></label>
-          <label class="full-field">Example translation<input name="translation" type="text" required /></label>
+          <label>Word<input name="word" type="text" lang="ja" maxlength="1000" required /></label>
+          <label>Reading<input name="reading" type="text" lang="ja" maxlength="1000" required /></label>
+          <label>Type<input name="type" type="text" maxlength="1000" required /></label>
+          <label>Meaning<input name="meaning" type="text" maxlength="1000" required /></label>
+          <label class="full-field">Example sentence<input name="example" type="text" lang="ja" maxlength="1000" required /></label>
+          <label class="full-field">Example translation<input name="translation" type="text" maxlength="1000" required /></label>
         </div>
         <p class="form-message" id="edit-card-message" aria-live="polite"></p>
         <div class="form-actions edit-form-actions">
@@ -158,6 +158,7 @@
       </form>
     </dialog>
     <script src="js/data/default-decks.js"></script>
+    <script src="js/shared/deck-transfer.js"></script>
     <script src="js/storage/deck-storage.js"></script>
     <script src="study.js"></script>
   </body>
