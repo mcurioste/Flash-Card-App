@@ -9,6 +9,7 @@ https://mcurioste.github.io/Flash-Card-App/
 ## Features
 
 - Create, edit, delete, and study multiple decks
+- Export a deck as versioned JSON or spreadsheet-friendly CSV and import it again
 - Add, edit, and delete individual or multiple cards
 - Local browser persistence with safe starter-data recovery
 - Space to reveal or hide; arrow keys to move between cards
@@ -42,6 +43,12 @@ No installation or build process is required. Double-click `index.html` to open 
 
 Decks are saved under the `recallFlashcardDecks` key in `localStorage`. Data exists only in the current browser and is not synchronized to an account. To reset Recall, remove that key in the browser developer tools under Application/Storage → Local Storage, then refresh; the starter deck will be restored.
 
+## Deck transfer format
+
+Exports use schema version `1`. JSON files contain exactly `schemaVersion`, `exportedAt`, and `deck`; a deck contains `id`, `title`, `description`, `language`, `level`, `prompt`, `maxCards`, and `cards`. Every card contains `id`, `word`, `reading`, `type`, `meaning`, `example`, and `translation`. CSV exports represent the same structure with one card per row and repeated deck metadata.
+
+Imports are parsed locally and are limited to 2 MB and 5,000 cards. The same limits are enforced when decks are saved, and both generated JSON and CSV representations must remain within 2 MB so every successful export can be restored. Recall rejects mismatched extensions/media types, unknown or missing fields, invalid lengths or identifiers, duplicate cards, malformed CSV/JSON, unsupported schema versions, and files that conflict with an existing deck. CSV exports also neutralize spreadsheet-formula prefixes—including formula characters preceded by apostrophes, control characters, or whitespace—while preserving their original value when re-imported.
+
 ## Current limitations
 
 - Accounts and cloud synchronization are not implemented.
@@ -51,4 +58,4 @@ Decks are saved under the `recallFlashcardDecks` key in `localStorage`. Data exi
 
 ## Planned improvements
 
-Potential future work includes import/export, optional cloud backup, richer card content, and an evidence-based review scheduler.
+Potential future work includes optional cloud backup, richer card content, and an evidence-based review scheduler.

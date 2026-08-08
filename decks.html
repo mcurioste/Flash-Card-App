@@ -17,7 +17,7 @@
   <main class="decks-main">
     <section class="decks-heading" aria-labelledby="decks-title">
       <div><p class="eyebrow"><span></span>Your study library</p><h1 id="decks-title">My <em>Decks</em></h1><p>Create focused collections, manage their cards, and pick up where you left off.</p></div>
-      <button class="button" id="create-deck" type="button">Create deck <span aria-hidden="true">＋</span></button>
+      <div class="heading-actions"><button class="secondary-button" id="import-deck" type="button">Import deck</button><button class="button" id="create-deck" type="button">Create deck <span aria-hidden="true">＋</span></button><input id="deck-file-input" type="file" accept=".json,.csv,application/json,text/csv" hidden /></div>
     </section>
     <p class="local-note">Your decks are stored only in this browser and are not synchronized to an account.</p>
     <p class="page-status" id="page-status" aria-live="polite"></p>
@@ -41,7 +41,11 @@
   <dialog class="deck-dialog confirm-dialog" id="delete-deck-dialog" aria-labelledby="delete-deck-title">
     <form id="delete-deck-form"><div class="form-heading"><div><p class="eyebrow"><span></span>Confirm deletion</p><h2 id="delete-deck-title">Delete deck?</h2></div><button class="dialog-close" id="close-delete-deck" type="button" aria-label="Close delete confirmation">&times;</button></div><p class="form-intro" id="delete-deck-description"></p><div class="form-actions"><button class="secondary-button" id="cancel-delete-deck" type="button">Keep deck</button><button class="danger-button" type="submit">Delete deck</button></div></form>
   </dialog>
+  <dialog class="deck-dialog confirm-dialog" id="export-deck-dialog" aria-labelledby="export-deck-title">
+    <form id="export-deck-form"><div class="form-heading"><div><p class="eyebrow"><span></span>Portable backup</p><h2 id="export-deck-title">Export deck</h2></div><button class="dialog-close" id="close-export-deck" type="button" aria-label="Close export dialog">&times;</button></div><p class="form-intro" id="export-destination-description">Choose a format to download your deck.</p><fieldset class="format-options"><legend>File format</legend><label><input type="radio" name="export-format" value="json" checked /><span><strong>JSON</strong><small>Best for a complete Recall backup</small></span></label><label><input type="radio" name="export-format" value="csv" /><span><strong>CSV</strong><small>Best for spreadsheets and editing</small></span></label></fieldset><p class="form-message" id="export-form-message" aria-live="polite"></p><div class="form-actions"><button class="secondary-button" id="cancel-export-deck" type="button">Cancel</button><button class="save-card-button" id="confirm-export-deck" type="submit">Download file</button></div></form>
+  </dialog>
   <script src="js/data/default-decks.js"></script>
+  <script src="js/shared/deck-transfer.js"></script>
   <script src="js/storage/deck-storage.js"></script>
   <script src="js/shared/navigation.js"></script>
   <script src="js/pages/decks-page.js"></script>
