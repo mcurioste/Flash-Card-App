@@ -37,17 +37,25 @@ js/shared/               Shared navigation behavior
 
 ## Run locally
 
-No installation or build process is required. Double-click `index.html` to open the application directly, or serve the folder with any existing static file server. GitHub Pages can host the application as-is.
+No installation or build process is required. Serve the project directory with any existing static file server, then open the provided localhost URL. For example, if Python is already available:
+
+```sh
+python3 -m http.server 8000
+```
+
+Then open `http://127.0.0.1:8000/`. Do not open the HTML files directly with `file://`: browsers may isolate storage by file, preventing `decks.html` and `study.html` from seeing the same decks. GitHub Pages can host the application as-is.
 
 ## Browser storage
 
-Decks are saved under the `recallFlashcardDecks` key in `localStorage`. Data exists only in the current browser and is not synchronized to an account. To reset Recall, remove that key in the browser developer tools under Application/Storage → Local Storage, then refresh; the starter deck will be restored.
+`RecallDeckStorage` is the single deck repository used by the dashboard, study view, imports, exports, and every deck/card mutation. It owns one normalized in-memory collection and persists that collection under the `recallFlashcardDecks` key in `localStorage`; the static default deck is used only to seed an empty store. If stored data is invalid, Recall preserves its original serialized value once under `recallFlashcardDecksRecovery` before restoring starter data.
+
+Data exists only in the current browser origin and is not synchronized to an account. To reset Recall, remove the `recallFlashcardDecks` key in browser developer tools and refresh; the starter deck will be restored.
 
 ## Deck transfer format
 
 Exports use schema version `1`. JSON files contain exactly `schemaVersion`, `exportedAt`, and `deck`; a deck contains `id`, `title`, `description`, `language`, `level`, `prompt`, `maxCards`, and `cards`. Every card contains `id`, `word`, `reading`, `type`, `meaning`, `example`, and `translation`. CSV exports represent the same structure with one card per row and repeated deck metadata.
 
-Imports are parsed locally and are limited to 2 MB and 5,000 cards. The same limits are enforced when decks are saved, and both generated JSON and CSV representations must remain within 2 MB so every successful export can be restored. Recall rejects mismatched extensions/media types, unknown or missing fields, invalid lengths or identifiers, duplicate cards, malformed CSV/JSON, unsupported schema versions, and files that conflict with an existing deck. CSV exports also neutralize spreadsheet-formula prefixes—including formula characters preceded by apostrophes, control characters, or whitespace—while preserving their original value when re-imported.
+Imports are parsed locally and are limited to 2 MB and 5,000 cards. After validation, Recall shows every card in a review dialog so users can choose cards and either create a new deck or append them to an existing one; nothing is stored until that import is confirmed. The same limits are enforced when decks are saved, and both generated JSON and CSV representations must remain within 2 MB so every successful export can be restored. Recall rejects mismatched extensions/media types, unknown or missing fields, invalid lengths or identifiers, duplicate cards, malformed CSV/JSON, unsupported schema versions, and conflicting deck titles or card identities. CSV exports also neutralize spreadsheet-formula prefixes—including formula characters preceded by apostrophes, control characters, or whitespace—while preserving their original value when re-imported.
 
 ## Current limitations
 

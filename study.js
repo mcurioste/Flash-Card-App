@@ -1,10 +1,12 @@
 (() => {
-const { addCard, deleteCards, getDeckById, updateCard } = window.RecallDeckStorage;
+const { CHANGE_EVENT, addCard, deleteCards, getDeckById, refreshDecks, updateCard } = window.RecallDeckStorage;
 const { MAX_CARDS } = window.RecallDeckTransfer;
 const $ = (s) => document.querySelector(s);
-const deckId = new URLSearchParams(location.search).get('deck');
+const search = new URLSearchParams(location.search);
+const deckId = search.get('deck');
+const requestedCardId = search.get('card');
 let deck = deckId ? getDeckById(deckId) : null;
-let cards = deck?.cards ?? [], index = 0, editingId = null;
+let cards = deck?.cards ?? [], index = Math.max(0, cards.findIndex((item) => item.id === requestedCardId)), editingId = null;
 let mode = 'flashcards', answered = false, selectedChoice = null, correctAnswers = 0, attempts = 0, streak = 0;
 const card = $('#learning-card'), answer = $('#learning-answer'), reveal = $('#study-reveal-button');
 const previous = $('#previous-card'), next = $('#next-card'), add = $('#add-card-button'), edit = $('#edit-card-button'), remove = $('#delete-card-button');
@@ -50,7 +52,8 @@ function renderCard() {
   $('#card-count').textContent = `${String(position).padStart(2, '0')} / ${String(cards.length).padStart(2, '0')}`; $('#progress-text').textContent = `Card ${position} of ${cards.length}`; $('#progress-percent').textContent = `${percent}%`; $('#progress-bar').style.width = `${percent}%`; controls();
   renderMode();
 }
-function renderDeck() { if (!deck) { $('#study-content').hidden = true; $('#deck-not-found').hidden = false; return; } document.title = `${deck.title} — Recall`; $('meta[name="description"]').content = deck.description; $('#deck-label').textContent = `${deck.language} · ${deck.level}`; $('#deck-title').textContent = deck.title; $('#deck-title-accent').textContent = ''; $('#deck-description').textContent = deck.description; $('#card-language').textContent = deck.language; $('#card-level').textContent = deck.level; $('#card-prompt').textContent = deck.prompt; document.querySelectorAll('[data-dialog-deck-name]').forEach((node) => { node.textContent = deck.title; }); renderCard(); }
+function renderDeck() { const missing = !deck; $('#study-content').hidden = missing; $('#deck-not-found').hidden = !missing; if (missing) return; document.title = `${deck.title} — Recall`; $('meta[name="description"]').content = deck.description; $('#deck-label').textContent = `${deck.language} · ${deck.level}`; $('#deck-title').textContent = deck.title; $('#deck-title-accent').textContent = ''; $('#deck-description').textContent = deck.description; $('#card-language').textContent = deck.language; $('#card-level').textContent = deck.level; $('#card-prompt').textContent = deck.prompt; document.querySelectorAll('[data-dialog-deck-name]').forEach((node) => { node.textContent = deck.title; }); renderCard(); }
+function syncStoredDeck() { const visibleCardId = cards[index]?.id || requestedCardId; const knownIds = new Set(cards.map((item) => item.id)); refresh(); const addedCard = cards.find((item) => !knownIds.has(item.id)); const targetId = addedCard?.id || visibleCardId; index = Math.max(0, cards.findIndex((item) => item.id === targetId)); renderDeck(); }
 function toggle() { if (!cards.length) return; const shown = !card.classList.contains('revealed'); card.classList.toggle('revealed', shown); reveal.textContent = shown ? 'Hide answer' : 'Reveal answer'; reveal.setAttribute('aria-expanded', String(shown)); answer.setAttribute('aria-hidden', String(!shown)); }
 function changeMode(nextMode) {
   if (nextMode === 'choice' && cards.length < 4) { $('#mode-message').textContent = 'You need at least 4 cards in this deck to use 4 choices.'; document.querySelector('input[name="study-mode"][value="flashcards"]').checked = true; mode = 'flashcards'; }
@@ -100,5 +103,7 @@ $('#shuffle-cards').addEventListener('change', toggleShuffle);
 $('#edit-card-list').addEventListener('click', (event) => { const button = event.target.closest('.edit-one-card-button'); if (button) openEdit(button.dataset.cardId); }); $('#delete-card-list').addEventListener('change', updateSelection); $('#select-all-cards').addEventListener('change', (event) => { $('#delete-card-list').querySelectorAll('input').forEach((input) => { input.checked = event.target.checked; }); updateSelection(); });
 [['#close-add-card',addDialog],['#close-edit-card-list',editListDialog],['#close-edit-card',editDialog],['#close-delete-card',deleteDialog]].forEach(([selector, dialog]) => $(selector).addEventListener('click', () => close(dialog))); $('#back-to-edit-list').addEventListener('click', () => { close(editDialog); editingId = null; openEditList(); }); [addDialog, editListDialog, editDialog, deleteDialog].forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) close(dialog); }));
 document.addEventListener('keydown', (event) => { const blocked = document.activeElement?.matches('input, textarea, select, button, [contenteditable="true"]') || $('dialog[open]'); if (blocked || mode !== 'flashcards') return; if (event.key === ' ') { if (!cards.length) return; event.preventDefault(); toggle(); } else if (event.key === 'ArrowLeft') move(-1); else if (event.key === 'ArrowRight') move(1); });
+window.addEventListener('pageshow', (event) => { if (event.persisted) { refreshDecks(); syncStoredDeck(); } });
+window.addEventListener(CHANGE_EVENT, (event) => { if (event.detail?.external) syncStoredDeck(); });
 renderDeck();
 })();

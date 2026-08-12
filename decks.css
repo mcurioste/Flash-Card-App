@@ -26,5 +26,27 @@
 .form-message { min-height: 20px; margin: 14px 0 0; color: #9a4f43; font-size: 11px; }.form-actions { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding-top: 8px; border-top: 1px solid var(--line); }.save-card-button { padding: 13px 20px; border: 1px solid var(--forest); color: var(--white); background: var(--forest); cursor: pointer; font-size: 11px; font-weight: 700; }
 .confirm-dialog { width: min(500px, calc(100% - 32px)); }.danger-button { padding: 13px 20px; border: 1px solid #8b4038; color: var(--white); background: #8b4038; cursor: pointer; }.secondary-button { padding: 13px 20px; }
 .format-options { display: grid; gap: 10px; margin: 22px 0; padding: 0; border: 0; }.format-options legend { margin-bottom: 8px; font: 500 9px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }.format-options label { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); cursor: pointer; }.format-options span { display: grid; gap: 3px; }.format-options small { color: var(--muted); }
+.import-review-dialog { width: min(820px, calc(100% - 32px)); }
+.import-selection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
+.import-selection-toolbar p { margin: 0; color: var(--forest); font-size: 12px; font-weight: 700; }
+.import-selection-toolbar > div { display: flex; gap: 8px; }
+.import-selection-toolbar .secondary-button { padding: 8px 11px; font-size: 10px; }
+.import-card-list { max-height: min(42vh, 430px); margin: 0; padding: 0; overflow-y: auto; border: 1px solid var(--line); background: var(--paper); }
+.import-card-option { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.import-card-option:last-child { border-bottom: 0; }
+.import-card-option input { margin-top: 4px; }
+.import-card-content { min-width: 0; }
+.import-card-content strong { display: block; margin-bottom: 8px; overflow-wrap: anywhere; font-size: 18px; }
+.import-card-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 18px; margin: 0; }
+.import-card-fields div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; min-width: 0; font-size: 11px; line-height: 1.45; }
+.import-card-fields dt { color: var(--muted); font: 500 9px "DM Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
+.import-card-fields dd { margin: 0; overflow-wrap: anywhere; }
+.import-destination { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px 18px; margin: 22px 0 0; padding: 18px; border: 1px solid var(--line); }
+.import-destination legend { padding: 0 7px; font: 500 9px "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
+.destination-option { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.destination-control { display: grid; gap: 6px; font: 500 9px "DM Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
+.destination-control input, .destination-control select { width: 100%; padding: 10px; border: 1px solid var(--line); color: var(--ink); background: var(--white); font: 500 13px "Manrope", sans-serif; }
+.destination-control input:disabled, .destination-control select:disabled { opacity: .55; cursor: not-allowed; }
+.save-card-button:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 900px) { .deck-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 620px) { .decks-main { padding: 48px 18px 70px; }.decks-heading { align-items: stretch; flex-direction: column; }.heading-actions { display: grid; grid-template-columns: 1fr 1fr; }.heading-actions > button { min-width: 0; }.deck-grid { grid-template-columns: 1fr; }.deck-tile { min-height: 300px; }.deck-dialog form { padding: 22px; }.deck-tile-actions { grid-template-columns: 1fr 1fr 1fr; }.study-deck-link { grid-column: 1 / -1; } }
+@media (max-width: 620px) { .decks-main { padding: 48px 18px 70px; }.decks-heading { align-items: stretch; flex-direction: column; }.heading-actions { display: grid; grid-template-columns: 1fr 1fr; }.heading-actions > button { min-width: 0; }.deck-grid { grid-template-columns: 1fr; }.deck-tile { min-height: 300px; }.deck-dialog form { padding: 22px; }.deck-tile-actions { grid-template-columns: 1fr 1fr 1fr; }.study-deck-link { grid-column: 1 / -1; }.import-selection-toolbar { align-items: flex-start; flex-direction: column; }.import-card-fields, .import-destination { grid-template-columns: 1fr; }.destination-control { margin-bottom: 8px; } }
