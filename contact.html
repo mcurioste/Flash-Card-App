@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Contact the Recall team with questions, feedback, or bug reports about the Japanese flashcard app."
+    />
+    <title>Contact Us — Recall</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="contact.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="index.html" aria-label="Recall home">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span>recall</span>
+      </a>
+
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span></span><span></span>
+        <span class="sr-only">Toggle navigation</span>
+      </button>
+
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="index.html">Home</a>
+        <a href="contact.html" aria-current="page">Contact Us</a>
+        <a class="button button-small" href="decks.html">Start studying</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="contact-hero" aria-labelledby="contact-title">
+        <div class="contact-copy">
+          <p class="eyebrow"><span></span> Get in touch</p>
+          <h1 id="contact-title">Write to us.<br /><em>We’ll listen.</em></h1>
+          <p class="contact-description">
+            Questions, feedback, and bug reports all help make Recall clearer. Fill out the form to get in touch 
+            or email us at recall.main.contact@gmail.com.
+          </p>
+          <ul class="contact-points">
+            <li>Typical replies take 2-5 business days</li>
+            <li>Include the page and browser if you are reporting a bug</li>
+            <li>No account is required to study or to write in</li>
+          </ul>
+        </div>
+
+        <div class="contact-visual">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <!-- <div class="floating-note contact-note">Replies<br /><strong>2-5 business days</strong></div> -->
+          <!-- <form class="contact-card" id="contact-form" novalidate>
+            <div class="card-topline">
+              <span class="deck-label">RECALL · CONTACT</span>
+            </div>
+            <div class="contact-fields">
+              <label>Your name
+                <input name="name" type="text" maxlength="80" autocomplete="name" required />
+              </label>
+              <label>Email
+                <input name="email" type="email" maxlength="120" autocomplete="email" required />
+              </label>
+              <label>Topic
+                <select name="topic" required>
+                  <option value="">Choose a topic</option>
+                  <option>Question</option>
+                  <option>Feedback</option>
+                  <option>Bug report</option>
+                  <option>Other</option>
+                </select>
+              </label>
+              <label class="full-field">Message
+                <textarea name="message" rows="5" maxlength="2000" required></textarea>
+              </label>
+            </div>
+            <p class="form-message" id="contact-form-message" aria-live="polite"></p>
+            <button class="button contact-submit" type="submit">
+              Send message <span aria-hidden="true">↗</span>
+            </button>
+          </form> -->
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><span>recall</span></a>
+      <p>Built for curious minds.</p>
+      <p>© <span id="year"></span> Recall</p>
+    </footer>
+
+    <script src="js/shared/navigation.js"></script>
+    <script src="js/pages/contact-page.js"></script>
+  </body>
+</html>
