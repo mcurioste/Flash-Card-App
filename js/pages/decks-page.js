@@ -135,16 +135,26 @@ function appendImportField(list, label, value) {
   row.append(term, description); list.append(row);
 }
 
+function duplicateFirstPreviewCards(cards) {
+  return [...cards.filter((item) => item.isDuplicate), ...cards.filter((item) => !item.isDuplicate)];
+}
+
 function renderImportCards(cards) {
   const fragment = document.createDocumentFragment();
-  cards.forEach((card, index) => {
-    const label = document.createElement('label'); label.className = 'import-card-option';
-    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'import-card-checkbox'; checkbox.dataset.cardIndex = String(index); checkbox.checked = true;
+  duplicateFirstPreviewCards(cards).forEach((item) => {
+    const { card } = item;
+    const label = document.createElement('label'); label.className = `import-card-option${item.isDuplicate ? ' import-card-option-duplicate' : ''}`;
+    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.className = 'import-card-checkbox'; checkbox.dataset.cardId = card.id; checkbox.checked = pendingImport.selectedCardIds.has(card.id);
     const content = document.createElement('span'); content.className = 'import-card-content';
     const word = document.createElement('strong'); word.textContent = card.word;
     const fields = document.createElement('dl'); fields.className = 'import-card-fields';
     appendImportField(fields, 'Reading', card.reading); appendImportField(fields, 'Type', card.type); appendImportField(fields, 'Meaning', card.meaning); appendImportField(fields, 'Example', card.example); appendImportField(fields, 'Translation', card.translation);
-    content.append(word, fields); label.append(checkbox, content); fragment.append(label);
+    content.append(word);
+    if (item.isDuplicate) {
+      const duplicate = document.createElement('span'); duplicate.className = 'import-duplicate-status'; duplicate.textContent = 'Duplicate — matches an existing card';
+      content.append(duplicate);
+    }
+    content.append(fields); label.append(checkbox, content); fragment.append(label);
   });
   importCardList.replaceChildren(fragment);
 }
@@ -161,17 +171,16 @@ function updateImportDuplicateMetadata() {
   if (!pendingImport) return;
   const deckId = selectedDestinationMode() === 'existing' ? existingDeckSelect.value : null;
   const metadata = getCardDuplicateMetadata(deckId, pendingImport.deck.cards);
-  pendingImport.cards = pendingImport.deck.cards.map((card, index) => ({ card, ...metadata[index], index }));
+  pendingImport.cards = pendingImport.deck.cards.map((card, index) => ({ card, ...metadata[index] }));
   pendingImport.cards.forEach((item) => {
     if (!item.isDuplicate) return;
-    pendingImport.selectedIndices.delete(item.index);
-    const checkbox = importCardList.querySelector(`[data-card-index="${item.index}"]`);
-    if (checkbox) checkbox.checked = false;
+    pendingImport.selectedCardIds.delete(item.card.id);
   });
+  renderImportCards(pendingImport.cards);
 }
 function updateImportControls() {
   if (!pendingImport) return;
-  const selected = pendingImport.selectedIndices.size;
+  const selected = pendingImport.selectedCardIds.size;
   const total = pendingImport.deck.cards.length;
   const mode = selectedDestinationMode();
   const creating = mode === 'new';
@@ -182,16 +191,16 @@ function updateImportControls() {
 }
 
 function beginImportReview(deck) {
-  pendingImport = { deck, cards: [], selectedIndices: new Set(deck.cards.map((_, index) => index)) };
+  pendingImport = { deck, cards: [], selectedCardIds: new Set(deck.cards.map((card) => card.id)) };
   importForm.reset(); importName.value = deck.title; importMessage.textContent = '';
   importSummary.textContent = `Uploaded deck: “${deck.title}” · ${deck.cards.length} ${deck.cards.length === 1 ? 'valid card' : 'valid cards'}`;
-  renderImportCards(deck.cards); renderExistingDeckOptions(); updateImportDuplicateMetadata(); updateImportControls(); importDialog.showModal(); importName.focus();
+  renderExistingDeckOptions(); updateImportDuplicateMetadata(); updateImportControls(); importDialog.showModal(); importName.focus();
 }
 
 function setAllImportCards(selected) {
   if (!pendingImport) return;
-  pendingImport.selectedIndices.clear();
-  importCardList.querySelectorAll('.import-card-checkbox').forEach((checkbox, index) => { checkbox.checked = selected; if (selected) pendingImport.selectedIndices.add(index); });
+  pendingImport.selectedCardIds.clear();
+  importCardList.querySelectorAll('.import-card-checkbox').forEach((checkbox) => { checkbox.checked = selected; if (selected) pendingImport.selectedCardIds.add(checkbox.dataset.cardId); });
   importMessage.textContent = ''; updateImportControls();
 }
 
@@ -203,7 +212,7 @@ function cancelImportReview() {
 function confirmImport(event) {
   event.preventDefault();
   if (!pendingImport) return;
-  const selectedCards = pendingImport.deck.cards.filter((_, index) => pendingImport.selectedIndices.has(index));
+  const selectedCards = pendingImport.deck.cards.filter((card) => pendingImport.selectedCardIds.has(card.id));
   const mode = selectedDestinationMode();
   if (selectedCards.length === 0) { importMessage.textContent = 'Select at least one card to import.'; updateImportControls(); return; }
   const destination = mode === 'new' ? { mode, title: importName.value } : { mode, deckId: existingDeckSelect.value };
@@ -220,7 +229,7 @@ document.querySelectorAll('#create-deck, #nav-create-deck, #empty-create-deck').
 document.querySelector('#import-deck').addEventListener('click', () => fileInput.click()); fileInput.addEventListener('change', handleImport);
 document.querySelector('#select-all-import-cards').addEventListener('click', () => setAllImportCards(true)); document.querySelector('#deselect-all-import-cards').addEventListener('click', () => setAllImportCards(false));
 document.querySelector('#close-import-review').addEventListener('click', cancelImportReview); document.querySelector('#cancel-import-review').addEventListener('click', cancelImportReview); importForm.addEventListener('submit', confirmImport);
-importCardList.addEventListener('change', (event) => { if (!pendingImport || !event.target.matches('.import-card-checkbox')) return; const index = Number(event.target.dataset.cardIndex); if (!Number.isInteger(index) || index < 0 || index >= pendingImport.deck.cards.length) return; if (event.target.checked) pendingImport.selectedIndices.add(index); else pendingImport.selectedIndices.delete(index); importMessage.textContent = ''; updateImportControls(); });
+importCardList.addEventListener('change', (event) => { if (!pendingImport || !event.target.matches('.import-card-checkbox')) return; const cardId = event.target.dataset.cardId; if (!pendingImport.deck.cards.some((card) => card.id === cardId)) return; if (event.target.checked) pendingImport.selectedCardIds.add(cardId); else pendingImport.selectedCardIds.delete(cardId); importMessage.textContent = ''; updateImportControls(); });
 importForm.addEventListener('change', (event) => { if (event.target.name === 'import-destination') { importMessage.textContent = ''; updateImportDuplicateMetadata(); updateImportControls(); } }); importName.addEventListener('input', updateImportControls); existingDeckSelect.addEventListener('change', () => { updateImportDuplicateMetadata(); updateImportControls(); });
 document.querySelector('#close-deck-dialog').addEventListener('click', closeDeckDialog); document.querySelector('#cancel-deck-dialog').addEventListener('click', closeDeckDialog); form.addEventListener('submit', saveDeck);
 grid.addEventListener('click', (event) => { const tile = event.target.closest('.deck-tile'); if (!tile) return; if (event.target.closest('.export-deck')) openExportDialog(tile.dataset.deckId); if (event.target.closest('.edit-deck')) openEditDialog(tile.dataset.deckId); if (event.target.closest('.delete-deck')) openDeleteDialog(tile.dataset.deckId); });

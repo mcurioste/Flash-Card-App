@@ -35,8 +35,10 @@
 .import-card-option { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; padding: 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .import-card-option:last-child { border-bottom: 0; }
 .import-card-option input { margin-top: 4px; }
+.import-card-option-duplicate { border-left: 3px solid #9a4f43; }
 .import-card-content { min-width: 0; }
 .import-card-content strong { display: block; margin-bottom: 8px; overflow-wrap: anywhere; font-size: 18px; }
+.import-duplicate-status { display: block; margin: -2px 0 9px; color: #9a4f43; font: 700 9px "DM Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
 .import-card-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 18px; margin: 0; }
 .import-card-fields div { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px; min-width: 0; font-size: 11px; line-height: 1.45; }
 .import-card-fields dt { color: var(--muted); font: 500 9px "DM Mono", monospace; letter-spacing: .04em; text-transform: uppercase; }
