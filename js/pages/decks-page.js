@@ -1,5 +1,5 @@
 (() => {
-const { CHANGE_EVENT, createDeck, deleteDeck, getAllDecks, getDeckById, importSelectedCards, refreshDecks, updateDeck } = window.RecallDeckStorage;
+const { CHANGE_EVENT, createDeck, deleteDeck, getAllDecks, getDeckById, getCardDuplicateMetadata, importSelectedCards, refreshDecks, updateDeck } = window.RecallDeckStorage;
 const { MAX_CARDS, exportDeck, readImportFile } = window.RecallDeckTransfer;
 const { initializeNavigation } = window.RecallNavigation;
 
@@ -157,6 +157,18 @@ function renderExistingDeckOptions() {
 }
 
 function selectedDestinationMode() { return importForm.elements['import-destination'].value; }
+function updateImportDuplicateMetadata() {
+  if (!pendingImport) return;
+  const deckId = selectedDestinationMode() === 'existing' ? existingDeckSelect.value : null;
+  const metadata = getCardDuplicateMetadata(deckId, pendingImport.deck.cards);
+  pendingImport.cards = pendingImport.deck.cards.map((card, index) => ({ card, ...metadata[index], index }));
+  pendingImport.cards.forEach((item) => {
+    if (!item.isDuplicate) return;
+    pendingImport.selectedIndices.delete(item.index);
+    const checkbox = importCardList.querySelector(`[data-card-index="${item.index}"]`);
+    if (checkbox) checkbox.checked = false;
+  });
+}
 function updateImportControls() {
   if (!pendingImport) return;
   const selected = pendingImport.selectedIndices.size;
@@ -170,10 +182,10 @@ function updateImportControls() {
 }
 
 function beginImportReview(deck) {
-  pendingImport = { deck, selectedIndices: new Set(deck.cards.map((_, index) => index)) };
+  pendingImport = { deck, cards: [], selectedIndices: new Set(deck.cards.map((_, index) => index)) };
   importForm.reset(); importName.value = deck.title; importMessage.textContent = '';
   importSummary.textContent = `Uploaded deck: “${deck.title}” · ${deck.cards.length} ${deck.cards.length === 1 ? 'valid card' : 'valid cards'}`;
-  renderImportCards(deck.cards); renderExistingDeckOptions(); updateImportControls(); importDialog.showModal(); importName.focus();
+  renderImportCards(deck.cards); renderExistingDeckOptions(); updateImportDuplicateMetadata(); updateImportControls(); importDialog.showModal(); importName.focus();
 }
 
 function setAllImportCards(selected) {
@@ -209,7 +221,7 @@ document.querySelector('#import-deck').addEventListener('click', () => fileInput
 document.querySelector('#select-all-import-cards').addEventListener('click', () => setAllImportCards(true)); document.querySelector('#deselect-all-import-cards').addEventListener('click', () => setAllImportCards(false));
 document.querySelector('#close-import-review').addEventListener('click', cancelImportReview); document.querySelector('#cancel-import-review').addEventListener('click', cancelImportReview); importForm.addEventListener('submit', confirmImport);
 importCardList.addEventListener('change', (event) => { if (!pendingImport || !event.target.matches('.import-card-checkbox')) return; const index = Number(event.target.dataset.cardIndex); if (!Number.isInteger(index) || index < 0 || index >= pendingImport.deck.cards.length) return; if (event.target.checked) pendingImport.selectedIndices.add(index); else pendingImport.selectedIndices.delete(index); importMessage.textContent = ''; updateImportControls(); });
-importForm.addEventListener('change', (event) => { if (event.target.name === 'import-destination') { importMessage.textContent = ''; updateImportControls(); } }); importName.addEventListener('input', updateImportControls); existingDeckSelect.addEventListener('change', updateImportControls);
+importForm.addEventListener('change', (event) => { if (event.target.name === 'import-destination') { importMessage.textContent = ''; updateImportDuplicateMetadata(); updateImportControls(); } }); importName.addEventListener('input', updateImportControls); existingDeckSelect.addEventListener('change', () => { updateImportDuplicateMetadata(); updateImportControls(); });
 document.querySelector('#close-deck-dialog').addEventListener('click', closeDeckDialog); document.querySelector('#cancel-deck-dialog').addEventListener('click', closeDeckDialog); form.addEventListener('submit', saveDeck);
 grid.addEventListener('click', (event) => { const tile = event.target.closest('.deck-tile'); if (!tile) return; if (event.target.closest('.export-deck')) openExportDialog(tile.dataset.deckId); if (event.target.closest('.edit-deck')) openEditDialog(tile.dataset.deckId); if (event.target.closest('.delete-deck')) openDeleteDialog(tile.dataset.deckId); });
 document.querySelector('#close-delete-deck').addEventListener('click', closeDeleteDialog); document.querySelector('#cancel-delete-deck').addEventListener('click', closeDeleteDialog); document.querySelector('#delete-deck-form').addEventListener('submit', confirmDelete);
