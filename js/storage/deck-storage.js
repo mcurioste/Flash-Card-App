@@ -142,15 +142,6 @@ function deleteDeck(id) { return mutateDecks((decks) => { const index = decks.fi
 function addCard(deckId, card) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck || hasCardIdentity(deck.cards, card)) return null; const limit = deck.maxCards === null ? MAX_CARDS : Math.min(deck.maxCards, MAX_CARDS); if (deck.cards.length >= limit) throw new Error(`This deck cannot contain more than ${limit} cards.`); const saved = normalizeCard({ ...card, id: createUniqueId(new Set(deck.cards.map((item) => item.id)), 'card') }); if (!saved) throw new Error('Card data is invalid.'); deck.cards.push(saved); return saved; }); }
 function updateCard(deckId, cardId, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); const card = deck?.cards.find((item) => item.id === cardId); if (!card) return null; const identityChanged = comparisonKey(card.word) !== comparisonKey(updates.word) || comparisonKey(card.reading) !== comparisonKey(updates.reading); if (identityChanged && hasCardIdentity(deck.cards, updates, cardId)) return null; CARD_TEXT_FIELDS.forEach((field) => { card[field] = updates[field]; }); return card; }); }
 function deleteCards(deckId, cardIds) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck) return false; const ids = new Set(cardIds); deck.cards = deck.cards.filter((card) => !ids.has(card.id)); return true; }); }
-function importDeck(deck) {
-  return mutateDecks((decks) => {
-    if (decks.some((item) => item.id === deck.id) || hasDeckTitle(decks, deck.title)) return null;
-    const copy = normalizeDeck(clone(deck));
-    if (!copy) return null;
-    decks.push(copy);
-    return copy;
-  });
-}
 
 function importSelectedCards(sourceDeck, selectedCards, destination, duplicateActions = []) {
   if (!Array.isArray(selectedCards) || selectedCards.length === 0) throw new Error('Select at least one card to import.');
@@ -223,5 +214,5 @@ window.addEventListener('storage', (event) => {
   catch (error) { console.warn('Recall ignored an invalid external deck update.', error); }
 });
 
-window.RecallDeckStorage = { STORAGE_KEY, CHANGE_EVENT, createId, getAllDecks, getDeckById, refreshDecks, getCardDuplicateMetadata, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importDeck, importSelectedCards };
+window.RecallDeckStorage = { STORAGE_KEY, CHANGE_EVENT, createId, getAllDecks, getDeckById, refreshDecks, getCardDuplicateMetadata, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importSelectedCards };
 })();
