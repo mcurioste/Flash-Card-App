@@ -140,7 +140,7 @@ function createDeck(metadata) {
 function updateDeck(id, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === id); if (!deck || hasDeckTitle(decks, updates.title, id)) return null; ['title', 'description', 'language', 'level'].forEach((field) => { deck[field] = updates[field]; }); return deck; }); }
 function deleteDeck(id) { return mutateDecks((decks) => { const index = decks.findIndex((deck) => deck.id === id); if (index < 0) return false; decks.splice(index, 1); return true; }); }
 function addCard(deckId, card) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck || hasCardIdentity(deck.cards, card)) return null; const limit = deck.maxCards === null ? MAX_CARDS : Math.min(deck.maxCards, MAX_CARDS); if (deck.cards.length >= limit) throw new Error(`This deck cannot contain more than ${limit} cards.`); const saved = normalizeCard({ ...card, id: createUniqueId(new Set(deck.cards.map((item) => item.id)), 'card') }); if (!saved) throw new Error('Card data is invalid.'); deck.cards.push(saved); return saved; }); }
-function updateCard(deckId, cardId, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); const card = deck?.cards.find((item) => item.id === cardId); if (!card || hasCardIdentity(deck.cards, updates, cardId)) return null; CARD_TEXT_FIELDS.forEach((field) => { card[field] = updates[field]; }); return card; }); }
+function updateCard(deckId, cardId, updates) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); const card = deck?.cards.find((item) => item.id === cardId); if (!card) return null; const identityChanged = comparisonKey(card.word) !== comparisonKey(updates.word) || comparisonKey(card.reading) !== comparisonKey(updates.reading); if (identityChanged && hasCardIdentity(deck.cards, updates, cardId)) return null; CARD_TEXT_FIELDS.forEach((field) => { card[field] = updates[field]; }); return card; }); }
 function deleteCards(deckId, cardIds) { return mutateDecks((decks) => { const deck = decks.find((item) => item.id === deckId); if (!deck) return false; const ids = new Set(cardIds); deck.cards = deck.cards.filter((card) => !ids.has(card.id)); return true; }); }
 function importDeck(deck) {
   return mutateDecks((decks) => {
@@ -152,21 +152,58 @@ function importDeck(deck) {
   });
 }
 
-function importSelectedCards(sourceDeck, selectedCards, destination) {
+function importSelectedCards(sourceDeck, selectedCards, destination, duplicateActions = []) {
   if (!Array.isArray(selectedCards) || selectedCards.length === 0) throw new Error('Select at least one card to import.');
   const preparedSource = prepareDeck({ ...clone(sourceDeck), cards: clone(selectedCards) });
+  if (!Array.isArray(duplicateActions)) throw new Error('Duplicate-card actions are invalid.');
+  const selectedIds = new Set(preparedSource.cards.map((card) => card.id));
+  const actionsByCardId = new Map();
+  duplicateActions.forEach((decision) => {
+    if (!decision || !selectedIds.has(decision.cardId) || actionsByCardId.has(decision.cardId) || !['skip', 'add-copy', 'replace'].includes(decision.action)) throw new Error('Duplicate-card actions are invalid.');
+    actionsByCardId.set(decision.cardId, { action: decision.action, matchingCardId: decision.matchingCardId });
+  });
   return mutateDecks((decks) => {
     if (destination?.mode === 'existing') {
       const deck = decks.find((item) => item.id === destination.deckId);
       if (!deck) throw new Error('The selected destination deck is no longer available.');
       const limit = deck.maxCards === null ? MAX_CARDS : Math.min(deck.maxCards, MAX_CARDS);
-      const importableCards = preparedSource.cards.filter((card) => !hasCardIdentity(deck.cards, card));
+      const nonduplicateCards = [];
+      const copyCards = [];
+      const replacements = [];
+      const replacementTargets = new Set();
+      let skippedCount = 0;
+      preparedSource.cards.forEach((card) => {
+        const match = findCardByIdentity(deck.cards, card);
+        const decision = actionsByCardId.get(card.id);
+        if (!match) {
+          if (decision) throw new Error(`“${card.word}” is no longer a duplicate in the selected deck. Review its import action.`);
+          nonduplicateCards.push(card);
+          return;
+        }
+        const action = decision?.action ?? 'skip';
+        const matchingCardId = decision?.matchingCardId ?? match.id;
+        const target = typeof matchingCardId === 'string' ? deck.cards.find((item) => item.id === matchingCardId) : null;
+        if (!target || !hasCardIdentity([target], card)) throw new Error(`The matching card for “${card.word}” changed. Review the import again.`);
+        if (action === 'skip') { skippedCount += 1; return; }
+        if (action === 'add-copy') { copyCards.push(card); return; }
+        if (replacementTargets.has(target.id)) throw new Error('Two imported cards cannot replace the same existing card. Choose Skip or Add copy for one of them.');
+        replacementTargets.add(target.id);
+        replacements.push({ card, targetId: target.id });
+      });
+      const addedCount = nonduplicateCards.length + copyCards.length;
       const available = Math.max(0, limit - deck.cards.length);
-      if (importableCards.length > available) throw new Error(`“${deck.title}” has room for ${available} more ${available === 1 ? 'card' : 'cards'}, but ${importableCards.length} nonduplicate cards are selected. Deselect cards or create a new deck.`);
+      if (addedCount > available) throw new Error(`“${deck.title}” has room for ${available} more ${available === 1 ? 'card' : 'cards'}, but ${addedCount} cards would be added. Skip cards or replace existing cards.`);
       const ids = new Set(deck.cards.map((card) => card.id));
-      const importedCards = copyCardsWithUniqueIds(importableCards, ids);
-      deck.cards.push(...importedCards);
-      return { deck, importedCount: importedCards.length, importedCardIds: importedCards.map((card) => card.id), created: false };
+      const importedCards = copyCardsWithUniqueIds(nonduplicateCards, ids);
+      const importedCopies = copyCards.map((card) => ({ ...card, id: createUniqueId(ids, 'card') }));
+      const proposedCards = deck.cards.map((card) => {
+        const replacement = replacements.find((item) => item.targetId === card.id);
+        return replacement ? { ...card, ...Object.fromEntries(CARD_TEXT_FIELDS.map((field) => [field, replacement.card[field]])) } : card;
+      });
+      proposedCards.push(...importedCards, ...importedCopies);
+      deck.cards = proposedCards;
+      const affectedIds = [...importedCards, ...importedCopies].map((card) => card.id).concat(replacements.map((item) => item.targetId));
+      return { deck, importedCount: affectedIds.length, importedCardIds: affectedIds, created: false, nonduplicateAdded: importedCards.length, copiesAdded: importedCopies.length, replacedCount: replacements.length, skippedCount };
     }
 
     if (destination?.mode !== 'new') throw new Error('Choose where to import the selected cards.');
@@ -176,7 +213,7 @@ function importSelectedCards(sourceDeck, selectedCards, destination) {
     const deckIds = new Set(decks.map((deck) => deck.id));
     const deck = { ...preparedSource, id: createUniqueId(deckIds, 'deck'), title };
     decks.push(deck);
-    return { deck, importedCount: deck.cards.length, importedCardIds: deck.cards.map((card) => card.id), created: true };
+    return { deck, importedCount: deck.cards.length, importedCardIds: deck.cards.map((card) => card.id), created: true, nonduplicateAdded: deck.cards.length, copiesAdded: 0, replacedCount: 0, skippedCount: 0 };
   });
 }
 

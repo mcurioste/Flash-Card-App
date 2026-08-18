@@ -50,7 +50,6 @@ function validateTransfer(value) {
   if (!Array.isArray(deck.cards) || deck.cards.length > MAX_CARDS) fail(`deck.cards must be an array with no more than ${MAX_CARDS} cards.`);
   if (deck.maxCards !== null && deck.cards.length > deck.maxCards) fail('deck.cards exceeds deck.maxCards.');
   const ids = new Set();
-  const identities = new Set();
   deck.cards.forEach((card, index) => {
     const path = `deck.cards[${index}]`;
     if (!hasExactKeys(card, CARD_FIELDS)) fail(`${path} must contain exactly: ${CARD_FIELDS.join(', ')}.`);
@@ -58,9 +57,6 @@ function validateTransfer(value) {
     if (ids.has(card.id)) fail(`${path}.id is duplicated.`);
     ids.add(card.id);
     CARD_FIELDS.slice(1).forEach((field) => requiredString(card[field], `${path}.${field}`, 1000));
-    const identity = `${card.word.trim().normalize('NFKC').toLocaleLowerCase()}\u0000${card.reading.trim().normalize('NFKC').toLocaleLowerCase()}`;
-    if (identities.has(identity)) fail(`${path} duplicates another card's word and reading.`);
-    identities.add(identity);
   });
   return JSON.parse(JSON.stringify(value));
 }
