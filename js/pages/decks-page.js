@@ -198,15 +198,23 @@ function renderExistingDeckOptions() {
 }
 
 function selectedDestinationMode() { return importForm.elements['import-destination'].value; }
+function reconcileNewCardSelection(previousCards, nextCards, selectedCardIds) {
+  const previousById = new Map(previousCards.map((item) => [item.card.id, item]));
+  nextCards.forEach((item) => {
+    if (item.isDuplicate) selectedCardIds.delete(item.card.id);
+    else if (previousById.get(item.card.id)?.isDuplicate) selectedCardIds.add(item.card.id);
+  });
+}
 function updateImportDuplicateMetadata() {
   if (!pendingImport) return;
   const deckId = selectedDestinationMode() === 'existing' ? existingDeckSelect.value : null;
   const metadata = getCardDuplicateMetadata(deckId, pendingImport.deck.cards);
+  const previousCards = pendingImport.cards;
   pendingImport.cards = pendingImport.deck.cards.map((card, index) => ({ card, ...metadata[index] }));
+  reconcileNewCardSelection(previousCards, pendingImport.cards, pendingImport.selectedCardIds);
   const nextActions = new Map();
   pendingImport.cards.forEach((item) => {
     if (!item.isDuplicate) return;
-    pendingImport.selectedCardIds.delete(item.card.id);
     const previous = pendingImport.duplicateActions.get(item.card.id);
     nextActions.set(item.card.id, previous?.matchingCardId === item.matchingCardId ? previous : { action: 'skip', matchingCardId: item.matchingCardId });
   });
