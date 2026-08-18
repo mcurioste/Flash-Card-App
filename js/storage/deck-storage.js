@@ -13,11 +13,13 @@ function hasDeckTitle(decks, title, excludedId = null) {
   return decks.some((deck) => deck.id !== excludedId && comparisonKey(deck.title) === titleKey);
 }
 
-function hasCardIdentity(cards, card, excludedId = null) {
+function findCardByIdentity(cards, card, excludedId = null) {
   const wordKey = comparisonKey(card.word);
   const readingKey = comparisonKey(card.reading);
-  return cards.some((item) => item.id !== excludedId && comparisonKey(item.word) === wordKey && comparisonKey(item.reading) === readingKey);
+  return cards.find((item) => item.id !== excludedId && comparisonKey(item.word) === wordKey && comparisonKey(item.reading) === readingKey) || null;
 }
+
+function hasCardIdentity(cards, card, excludedId = null) { return Boolean(findCardByIdentity(cards, card, excludedId)); }
 
 function createId(prefix = 'item') {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -109,6 +111,14 @@ let canonicalDecks = readStoredDecks();
 function getAllDecks() { return clone(canonicalDecks); }
 function getDeckById(id) { const deck = typeof id === 'string' ? canonicalDecks.find((item) => item.id === id) : null; return deck ? clone(deck) : null; }
 function refreshDecks() { canonicalDecks = readStoredDecks(); return getAllDecks(); }
+function getCardDuplicateMetadata(deckId, cards) {
+  const deck = typeof deckId === 'string' ? canonicalDecks.find((item) => item.id === deckId) : null;
+  if (!Array.isArray(cards)) return [];
+  return cards.map((card) => {
+    const match = deck ? findCardByIdentity(deck.cards, card) : null;
+    return { isDuplicate: Boolean(match), matchingCardId: match?.id ?? null };
+  });
+}
 
 function commitDecks(decks) {
   const prepared = prepareDeckCollection(decks);
@@ -150,12 +160,11 @@ function importSelectedCards(sourceDeck, selectedCards, destination) {
       const deck = decks.find((item) => item.id === destination.deckId);
       if (!deck) throw new Error('The selected destination deck is no longer available.');
       const limit = deck.maxCards === null ? MAX_CARDS : Math.min(deck.maxCards, MAX_CARDS);
+      const importableCards = preparedSource.cards.filter((card) => !hasCardIdentity(deck.cards, card));
       const available = Math.max(0, limit - deck.cards.length);
-      if (preparedSource.cards.length > available) throw new Error(`“${deck.title}” has room for ${available} more ${available === 1 ? 'card' : 'cards'}, but ${preparedSource.cards.length} are selected. Deselect cards or create a new deck.`);
-      const duplicate = preparedSource.cards.find((card) => hasCardIdentity(deck.cards, card));
-      if (duplicate) throw new Error(`“${deck.title}” already contains “${duplicate.word}” with the reading “${duplicate.reading}”. Deselect that card or create a new deck.`);
+      if (importableCards.length > available) throw new Error(`“${deck.title}” has room for ${available} more ${available === 1 ? 'card' : 'cards'}, but ${importableCards.length} nonduplicate cards are selected. Deselect cards or create a new deck.`);
       const ids = new Set(deck.cards.map((card) => card.id));
-      const importedCards = copyCardsWithUniqueIds(preparedSource.cards, ids);
+      const importedCards = copyCardsWithUniqueIds(importableCards, ids);
       deck.cards.push(...importedCards);
       return { deck, importedCount: importedCards.length, importedCardIds: importedCards.map((card) => card.id), created: false };
     }
@@ -177,5 +186,5 @@ window.addEventListener('storage', (event) => {
   catch (error) { console.warn('Recall ignored an invalid external deck update.', error); }
 });
 
-window.RecallDeckStorage = { STORAGE_KEY, CHANGE_EVENT, createId, getAllDecks, getDeckById, refreshDecks, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importDeck, importSelectedCards };
+window.RecallDeckStorage = { STORAGE_KEY, CHANGE_EVENT, createId, getAllDecks, getDeckById, refreshDecks, getCardDuplicateMetadata, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importDeck, importSelectedCards };
 })();
