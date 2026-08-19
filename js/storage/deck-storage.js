@@ -301,7 +301,7 @@ function commitDecks(decks) {
 }
 
 function mutateDecks(mutation) {
-  const workingDecks = getAllDecks();https://github.com/mcurioste/Flash-Card-App/tree/util/beautify-code
+  const workingDecks = getAllDecks();
   const result = mutation(workingDecks);
   commitDecks(workingDecks);
   return clone(result);
