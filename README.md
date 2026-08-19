@@ -47,7 +47,7 @@ Then open `http://127.0.0.1:8000/`. Do not open the HTML files directly with `fi
 
 ## Browser storage
 
-`RecallDeckStorage` is the single deck repository used by the dashboard, study view, imports, exports, and every deck/card mutation. It owns one normalized in-memory collection and persists that collection under the `recallFlashcardDecks` key in `localStorage`; the static default deck is used only to seed an empty store. If stored data is invalid, Recall preserves its original serialized value once under `recallFlashcardDecksRecovery` before restoring starter data.
+`RecallDeckStorage` is the single deck repository used by the dashboard, study view, imports, exports, and every deck/card mutation. It owns one validated in-memory collection and persists a versioned envelope under the `recallFlashcardDecks` key in `localStorage`; the static default deck is used only to seed an empty store. Legacy bare-array storage is migrated automatically. Invalid decks are isolated while valid decks remain available, and rejected data is preserved under uniquely named `recallFlashcardDecksRecovery:*` keys.
 
 Data exists only in the current browser origin and is not synchronized to an account. To reset Recall, remove the `recallFlashcardDecks` key in browser developer tools and refresh; the starter deck will be restored.
 

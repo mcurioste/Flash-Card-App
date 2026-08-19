@@ -8,10 +8,12 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 
-function loadRecall() {
-  const values = new Map();
+function loadRecall(options = {}) {
+  const values = options.values || new Map();
+  if (Object.hasOwn(options, 'storedValue')) values.set('recallFlashcardDecks', options.storedValue);
+  let storageListener = null;
   const context = vm.createContext({
-    console,
+    console: options.console || { ...console, warn: () => {} },
     crypto: { randomUUID: (() => { let id = 0; return () => `generated-${++id}`; })() },
     CustomEvent: class CustomEvent { constructor(type, options) { this.type = type; this.detail = options?.detail; } },
     localStorage: {
@@ -27,11 +29,13 @@ function loadRecall() {
   });
   context.window = context;
   context.globalThis = context;
-  context.addEventListener = () => {};
+  context.addEventListener = (type, listener) => { if (type === 'storage') storageListener = listener; };
   context.dispatchEvent = () => true;
-  ['js/data/default-decks.js', 'js/shared/deck-transfer.js', 'js/storage/deck-storage.js'].forEach((file) => {
-    vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file });
-  });
+  vm.runInContext(fs.readFileSync(path.join(root, 'js/data/default-decks.js'), 'utf8'), context, { filename: 'js/data/default-decks.js' });
+  if (Object.hasOwn(options, 'defaultDecks')) context.RecallDefaultDecks = options.defaultDecks;
+  ['js/shared/deck-transfer.js', 'js/storage/deck-storage.js'].forEach((file) => vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file }));
+  context.__storageValues = values;
+  context.__dispatchStorage = (newValue) => storageListener?.({ key: 'recallFlashcardDecks', newValue });
   return context;
 }
 
@@ -74,7 +78,168 @@ test('Phase 1 imports preserve uniqueness, expose matches, and skip duplicate ca
   assert.equal(storage.deleteCards(destination.id, [added.id]), true);
   assert.equal(storage.getDeckById(destination.id).cards.some((item) => item.id === added.id), false);
   assert.equal(recall.RecallDeckTransfer.createTransfer(storage.getDeckById(destination.id)).deck.cards.length, 2);
-  assert.equal(JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY)).find((deck) => deck.id === destination.id).cards.length, 2);
+  assert.equal(JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY)).decks.find((deck) => deck.id === destination.id).cards.length, 2);
+});
+
+test('fresh storage seeds valid defaults in the current versioned envelope', () => {
+  const recall = loadRecall();
+  const storage = recall.RecallDeckStorage;
+  const saved = JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY));
+  assert.equal(saved.storageVersion, storage.CURRENT_STORAGE_VERSION);
+  assert.deepEqual(saved.decks, JSON.parse(JSON.stringify(storage.getAllDecks())));
+  assert.equal(storage.getStorageStatus(), null);
+});
+
+test('invalid defaults still initialize a usable storage API with an empty library', () => {
+  const recall = loadRecall({ defaultDecks: [{ id: 'broken-default', cards: 'not an array' }] });
+  const storage = recall.RecallDeckStorage;
+  assert.ok(storage);
+  assert.deepEqual(JSON.parse(JSON.stringify(storage.getAllDecks())), []);
+  assert.match(storage.getStorageStatus().message, /starter deck/);
+  assert.deepEqual(JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY)), { storageVersion: 1, decks: [] });
+  assert.ok(storage.createDeck({ title: 'After recovery', description: 'Works', language: 'English', level: 'Beginner' }));
+});
+
+test('legacy bare-array storage migrates without changing valid decks', () => {
+  const original = [sourceDeck('Legacy', [card('legacy-card', 'old', 'old')])];
+  const recall = loadRecall({ storedValue: JSON.stringify(original) });
+  const storage = recall.RecallDeckStorage;
+  assert.deepEqual(JSON.parse(JSON.stringify(storage.getAllDecks())), original);
+  assert.deepEqual(JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY)), { storageVersion: storage.CURRENT_STORAGE_VERSION, decks: original });
+});
+
+test('an explicit legacy version-zero envelope uses the same migration', () => {
+  const decks = [sourceDeck('Explicit legacy', [card('explicit-card', 'old', 'old')])];
+  const recall = loadRecall({ storedValue: JSON.stringify({ storageVersion: 0, decks }) });
+  assert.deepEqual(JSON.parse(recall.localStorage.getItem('recallFlashcardDecks')), { storageVersion: 1, decks });
+  assert.deepEqual(JSON.parse(JSON.stringify(recall.RecallDeckStorage.getAllDecks())), decks);
+});
+
+test('current-version storage loads normally without rewriting valid data', () => {
+  const decks = [sourceDeck('Current', [card('current-card', 'now', 'now')])];
+  const raw = JSON.stringify({ storageVersion: 1, decks });
+  const recall = loadRecall({ storedValue: raw });
+  assert.deepEqual(JSON.parse(JSON.stringify(recall.RecallDeckStorage.getAllDecks())), decks);
+  assert.equal(recall.localStorage.getItem('recallFlashcardDecks'), raw);
+  assert.equal(recall.RecallDeckStorage.getStorageStatus(), null);
+});
+
+test('persisted storage tolerates internal fields without weakening transfer validation', () => {
+  const deck = { ...sourceDeck('Internal', [{ ...card('internal-card', 'inside', 'inside'), internalNote: 'keep me' }]), storageMetadata: { source: 'future Recall' } };
+  const raw = JSON.stringify({ storageVersion: 1, decks: [deck], envelopeMetadata: true });
+  const recall = loadRecall({ storedValue: raw });
+  assert.deepEqual(JSON.parse(JSON.stringify(recall.RecallDeckStorage.getAllDecks())), [deck]);
+
+  const transfer = recall.RecallDeckTransfer.createTransfer(deck);
+  transfer.unexpected = true;
+  assert.throws(() => recall.RecallDeckTransfer.validateTransfer(transfer), /exactly schemaVersion, exportedAt, and deck/);
+});
+
+test('one corrupted stored deck is isolated while valid decks survive unchanged', () => {
+  const first = sourceDeck('First', [card('first-card', 'one', 'one')]);
+  const rejected = { ...sourceDeck('Broken', [card('broken-card', 'bad', 'bad')]), cards: [{ id: 'broken-card', word: 'missing fields' }] };
+  const third = sourceDeck('Third', [card('third-card', 'three', 'three')]);
+  const recall = loadRecall({ storedValue: JSON.stringify({ storageVersion: 1, decks: [first, rejected, third] }) });
+  const storage = recall.RecallDeckStorage;
+  assert.deepEqual(JSON.parse(JSON.stringify(storage.getAllDecks())), [first, third]);
+  assert.equal(storage.getStorageStatus().rejectedDeckCount, 1);
+  const recovery = JSON.parse(recall.localStorage.getItem(storage.getStorageStatus().recoveryKey));
+  assert.deepEqual(recovery.rejectedDecks[0].deck, rejected);
+  assert.deepEqual(JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY)).decks, [first, third]);
+});
+
+test('all corrupted stored decks are preserved and produce an empty valid library', () => {
+  const invalid = [{ id: 'bad-one' }, null];
+  const recall = loadRecall({ storedValue: JSON.stringify({ storageVersion: 1, decks: invalid }) });
+  const storage = recall.RecallDeckStorage;
+  assert.deepEqual(JSON.parse(JSON.stringify(storage.getAllDecks())), []);
+  assert.equal(storage.getStorageStatus().rejectedDeckCount, 2);
+  assert.equal(JSON.parse(recall.localStorage.getItem(storage.getStorageStatus().recoveryKey)).rejectedDecks.length, 2);
+});
+
+test('malformed JSON is preserved and storage remains available with safe defaults', () => {
+  const raw = '{not json';
+  const recall = loadRecall({ storedValue: raw });
+  const storage = recall.RecallDeckStorage;
+  assert.ok(storage);
+  assert.equal(recall.localStorage.getItem(storage.STORAGE_KEY), raw);
+  const recoveryKey = [...recall.__storageValues.keys()].find((key) => key.startsWith(`${storage.RECOVERY_KEY_PREFIX}:`));
+  assert.equal(JSON.parse(recall.localStorage.getItem(recoveryKey)).rawPayload, raw);
+  assert.match(storage.getStorageStatus().message, /preserved for recovery/);
+});
+
+test('unsupported future storage is preserved without replacing the original payload', () => {
+  const raw = JSON.stringify({ storageVersion: 999, decks: [] });
+  const recall = loadRecall({ storedValue: raw });
+  const storage = recall.RecallDeckStorage;
+  assert.ok(storage);
+  assert.equal(recall.localStorage.getItem(storage.STORAGE_KEY), raw);
+  const recoveryKey = [...recall.__storageValues.keys()].find((key) => key.startsWith(`${storage.RECOVERY_KEY_PREFIX}:`));
+  assert.equal(JSON.parse(recall.localStorage.getItem(recoveryKey)).rawPayload, raw);
+});
+
+test('repeated recovery events use unique keys and preserve prior recovery data', () => {
+  const values = new Map();
+  const firstRaw = '{first invalid';
+  const recall = loadRecall({ storedValue: firstRaw, values });
+  const storage = recall.RecallDeckStorage;
+  const firstKey = [...values.keys()].find((key) => key.startsWith(`${storage.RECOVERY_KEY_PREFIX}:`));
+  const firstRecovery = values.get(firstKey);
+  const secondRaw = '{second invalid';
+  values.set(storage.STORAGE_KEY, secondRaw);
+  storage.refreshDecks();
+  const recoveryKeys = [...values.keys()].filter((key) => key.startsWith(`${storage.RECOVERY_KEY_PREFIX}:`));
+  assert.equal(recoveryKeys.length, 2);
+  assert.equal(values.get(firstKey), firstRecovery);
+  assert.equal(JSON.parse(values.get(recoveryKeys.find((key) => key !== firstKey))).rawPayload, secondRaw);
+});
+
+test('a recovery-write failure does not replace the original corrupted payload', () => {
+  const values = new Map();
+  const recall = loadRecall({ values });
+  const storage = recall.RecallDeckStorage;
+  const valid = sourceDeck('Survivor', []);
+  const raw = JSON.stringify({ storageVersion: 1, decks: [valid, { id: 'rejected' }] });
+  values.set(storage.STORAGE_KEY, raw);
+  recall.localStorage.setItem = (key, value) => {
+    if (key.startsWith(storage.RECOVERY_KEY_PREFIX)) throw new Error('Recovery storage unavailable');
+    values.set(key, String(value));
+  };
+
+  assert.deepEqual(JSON.parse(JSON.stringify(storage.refreshDecks())), [valid]);
+  assert.equal(values.get(storage.STORAGE_KEY), raw);
+  assert.equal(storage.getStorageStatus().recoveryKey, null);
+  assert.match(storage.getStorageStatus().message, /could not create a recovery copy/);
+});
+
+test('all-valid stored decks require no recovery copy', () => {
+  const decks = [sourceDeck('One', []), sourceDeck('Two', [card('two-card', 'two', 'two')])];
+  const recall = loadRecall({ storedValue: JSON.stringify({ storageVersion: 1, decks }) });
+  assert.deepEqual(JSON.parse(JSON.stringify(recall.RecallDeckStorage.getAllDecks())), decks);
+  assert.equal([...recall.__storageValues.keys()].some((key) => key.startsWith(recall.RecallDeckStorage.RECOVERY_KEY_PREFIX)), false);
+});
+
+test('deck and card mutations, refresh, and cross-tab reload stay transparent with versioned storage', () => {
+  const values = new Map();
+  const firstTab = loadRecall({ values });
+  const secondTab = loadRecall({ values });
+  const first = firstTab.RecallDeckStorage;
+  const second = secondTab.RecallDeckStorage;
+  const created = first.createDeck({ title: 'Workflow', description: 'Initial', language: 'English', level: 'Beginner' });
+  assert.equal(first.updateDeck(created.id, { title: 'Workflow updated', description: 'Edited', language: 'English', level: 'Intermediate' }).description, 'Edited');
+  const added = first.addCard(created.id, card('ignored', 'term', 'reading'));
+  assert.equal(first.updateCard(created.id, added.id, { ...added, meaning: 'updated meaning' }).meaning, 'updated meaning');
+  first.deleteCards(created.id, [added.id]);
+
+  const serialized = JSON.parse(values.get(first.STORAGE_KEY));
+  assert.equal(serialized.storageVersion, first.CURRENT_STORAGE_VERSION);
+  assert.equal(serialized.decks.find((deck) => deck.id === created.id).cards.length, 0);
+  secondTab.__dispatchStorage(values.get(first.STORAGE_KEY));
+  assert.equal(second.getDeckById(created.id).title, 'Workflow updated');
+
+  first.deleteDeck(created.id);
+  second.refreshDecks();
+  assert.equal(second.getDeckById(created.id), null);
 });
 
 test('Phase 3 atomically skips, copies, and replaces duplicate cards', () => {

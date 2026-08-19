@@ -1,5 +1,11 @@
 (() => {
-const { CHANGE_EVENT, addCard, deleteCards, getDeckById, refreshDecks, updateCard } = window.RecallDeckStorage;
+const storage = window.RecallDeckStorage;
+if (!storage) {
+  const statusElement = document.querySelector('#storage-status');
+  if (statusElement) statusElement.textContent = 'Recall could not initialize browser storage. Reload the page or check browser storage permissions.';
+  return;
+}
+const { CHANGE_EVENT, addCard, deleteCards, getDeckById, getStorageStatus, refreshDecks, updateCard } = storage;
 const { MAX_CARDS } = window.RecallDeckTransfer;
 const $ = (s) => document.querySelector(s);
 const search = new URLSearchParams(location.search);
@@ -14,6 +20,7 @@ const addDialog = $('#add-card-dialog'), editListDialog = $('#edit-card-list-dia
 const addForm = $('#add-card-form'), editForm = $('#edit-card-form');
 const choiceTest = $('#choice-test'), choiceSubmit = $('#choice-submit-button'), feedback = $('#test-feedback');
 const fields = ['word', 'reading', 'type', 'meaning', 'example', 'translation'];
+function showStorageStatus() { const current = getStorageStatus(); $('#storage-status').textContent = current?.message || ''; }
 const shuffle = (items) => { const copy = [...items]; for (let i = copy.length - 1; i > 0; i -= 1) { const j = Math.floor(Math.random() * (i + 1)); [copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; };
 function refresh() { deck = getDeckById(deckId); cards = deck?.cards ?? []; if ($('#shuffle-cards')?.checked) cards = shuffle(cards); }
 function close(dialog) { if (dialog.open) dialog.close(); }
@@ -103,7 +110,7 @@ $('#shuffle-cards').addEventListener('change', toggleShuffle);
 $('#edit-card-list').addEventListener('click', (event) => { const button = event.target.closest('.edit-one-card-button'); if (button) openEdit(button.dataset.cardId); }); $('#delete-card-list').addEventListener('change', updateSelection); $('#select-all-cards').addEventListener('change', (event) => { $('#delete-card-list').querySelectorAll('input').forEach((input) => { input.checked = event.target.checked; }); updateSelection(); });
 [['#close-add-card',addDialog],['#close-edit-card-list',editListDialog],['#close-edit-card',editDialog],['#close-delete-card',deleteDialog]].forEach(([selector, dialog]) => $(selector).addEventListener('click', () => close(dialog))); $('#back-to-edit-list').addEventListener('click', () => { close(editDialog); editingId = null; openEditList(); }); [addDialog, editListDialog, editDialog, deleteDialog].forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) close(dialog); }));
 document.addEventListener('keydown', (event) => { const blocked = document.activeElement?.matches('input, textarea, select, button, [contenteditable="true"]') || $('dialog[open]'); if (blocked || mode !== 'flashcards') return; if (event.key === ' ') { if (!cards.length) return; event.preventDefault(); toggle(); } else if (event.key === 'ArrowLeft') move(-1); else if (event.key === 'ArrowRight') move(1); });
-window.addEventListener('pageshow', (event) => { if (event.persisted) { refreshDecks(); syncStoredDeck(); } });
-window.addEventListener(CHANGE_EVENT, (event) => { if (event.detail?.external) syncStoredDeck(); });
-renderDeck();
+window.addEventListener('pageshow', (event) => { if (event.persisted) { refreshDecks(); syncStoredDeck(); showStorageStatus(); } });
+window.addEventListener(CHANGE_EVENT, (event) => { if (event.detail?.external) { syncStoredDeck(); showStorageStatus(); } });
+renderDeck(); showStorageStatus();
 })();

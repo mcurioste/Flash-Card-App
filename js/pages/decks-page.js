@@ -1,5 +1,11 @@
 (() => {
-const { CHANGE_EVENT, createDeck, deleteDeck, getAllDecks, getDeckById, getCardDuplicateMetadata, importSelectedCards, refreshDecks, updateDeck } = window.RecallDeckStorage;
+const storage = window.RecallDeckStorage;
+if (!storage) {
+  const statusElement = document.querySelector('#page-status');
+  if (statusElement) statusElement.textContent = 'Recall could not initialize browser storage. Reload the page or check browser storage permissions.';
+  return;
+}
+const { CHANGE_EVENT, createDeck, deleteDeck, getAllDecks, getDeckById, getCardDuplicateMetadata, getStorageStatus, importSelectedCards, refreshDecks, updateDeck } = storage;
 const { MAX_CARDS, exportDeck, readImportFile } = window.RecallDeckTransfer;
 const { initializeNavigation } = window.RecallNavigation;
 
@@ -38,6 +44,7 @@ let pendingImport = null;
 const importedCardTargets = new Map();
 
 function announce(message) { status.textContent = ''; requestAnimationFrame(() => { status.textContent = message; }); }
+function announceStorageStatus() { const current = getStorageStatus(); if (current?.message) announce(current.message); }
 function deckMetadata(formData) { return Object.fromEntries(['title', 'description', 'language', 'level'].map((key) => [key, String(formData.get(key)).trim()])); }
 
 function renderDecks() {
@@ -290,8 +297,9 @@ document.querySelector('#close-delete-deck').addEventListener('click', closeDele
 document.querySelector('#close-export-deck').addEventListener('click', closeExportDialog); document.querySelector('#cancel-export-deck').addEventListener('click', closeExportDialog); exportForm.addEventListener('submit', submitExport);
 [dialog, deleteDialog, exportDialog].forEach((item) => item.addEventListener('click', (event) => { if (event.target === item) item.close(); }));
 importDialog.addEventListener('click', (event) => { if (event.target === importDialog) cancelImportReview(); }); importDialog.addEventListener('cancel', (event) => { event.preventDefault(); cancelImportReview(); }); importDialog.addEventListener('close', () => { if (pendingImport) cancelImportReview(); });
-window.addEventListener(CHANGE_EVENT, (event) => { if (event.detail?.external) renderDecks(); });
-window.addEventListener('pageshow', (event) => { if (event.persisted) { refreshDecks(); renderDecks(); } });
+window.addEventListener(CHANGE_EVENT, (event) => { if (event.detail?.external) { renderDecks(); announceStorageStatus(); } });
+window.addEventListener('pageshow', (event) => { if (event.persisted) { refreshDecks(); renderDecks(); announceStorageStatus(); } });
 initializeNavigation(); renderDecks();
 if (location.protocol === 'file:') announce('Recall must be opened through a local web server. Direct file mode cannot share deck storage with the Study page.');
+else announceStorageStatus();
 })();

@@ -1,12 +1,15 @@
 (() => {
 const defaultDecks = window.RecallDefaultDecks;
-const { createTransfer, MAX_CARDS } = window.RecallDeckTransfer;
+const MAX_CARDS = 5000;
 const STORAGE_KEY = 'recallFlashcardDecks';
-const RECOVERY_KEY = `${STORAGE_KEY}Recovery`;
+const RECOVERY_KEY_PREFIX = `${STORAGE_KEY}Recovery`;
+const CURRENT_STORAGE_VERSION = 1;
 const CHANGE_EVENT = 'recall:decks-changed';
 const CARD_TEXT_FIELDS = ['word', 'reading', 'type', 'meaning', 'example', 'translation'];
+const ID_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N}._:-]{0,127}$/u;
 const clone = (value) => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 const comparisonKey = (value) => String(value).trim().normalize('NFKC').toLocaleLowerCase();
+let storageStatus = null;
 
 function hasDeckTitle(decks, title, excludedId = null) {
   const titleKey = comparisonKey(title);
@@ -48,68 +51,151 @@ function normalizeCard(card) {
   return { id: typeof card.id === 'string' && card.id ? card.id : createId('card'), ...Object.fromEntries(CARD_TEXT_FIELDS.map((field) => [field, card[field]])) };
 }
 
-function normalizeDeck(deck) {
-  if (!deck || typeof deck !== 'object' || typeof deck.id !== 'string' || !deck.id || !Array.isArray(deck.cards)) return null;
-  const cards = deck.cards.map(normalizeCard).filter(Boolean);
-  if (cards.length !== deck.cards.length) return null;
-  return {
-    id: deck.id,
-    title: typeof deck.title === 'string' && deck.title.trim() ? deck.title : 'Untitled deck',
-    description: typeof deck.description === 'string' ? deck.description : '',
-    language: typeof deck.language === 'string' && deck.language.trim() ? deck.language : 'Unspecified',
-    level: typeof deck.level === 'string' && deck.level.trim() ? deck.level : 'All levels',
-    prompt: typeof deck.prompt === 'string' && deck.prompt ? deck.prompt : 'WHAT DOES THIS WORD MEAN?',
-    maxCards: deck.maxCards ?? null,
-    cards
-  };
+function fail(message) { throw new Error(message); }
+function storedString(value, label, maxLength, allowEmpty = false) {
+  if (typeof value !== 'string' || value.length > maxLength || (!allowEmpty && !value.trim())) fail(`${label} is invalid.`);
+  return value;
 }
 
-function prepareDeck(deck) {
-  const normalized = normalizeDeck(clone(deck));
-  if (!normalized) throw new Error('Deck data is invalid.');
-  createTransfer(normalized);
-  return normalized;
+// Persisted Recall data has its own validation path. Transfer-file validation is
+// intentionally stricter and remains in deck-transfer.js.
+function prepareStoredDeck(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) fail('Deck data is invalid.');
+  const deck = clone(value);
+  storedString(deck.id, 'deck.id', 128);
+  if (!ID_PATTERN.test(deck.id)) fail('deck.id is invalid.');
+  storedString(deck.title, 'deck.title', 80);
+  storedString(deck.description, 'deck.description', 240, true);
+  storedString(deck.language, 'deck.language', 60);
+  storedString(deck.level, 'deck.level', 60);
+  storedString(deck.prompt, 'deck.prompt', 160);
+  if (deck.maxCards !== null && (!Number.isSafeInteger(deck.maxCards) || deck.maxCards < 1 || deck.maxCards > MAX_CARDS)) fail('deck.maxCards is invalid.');
+  if (!Array.isArray(deck.cards) || deck.cards.length > MAX_CARDS || (deck.maxCards !== null && deck.cards.length > deck.maxCards)) fail('deck.cards is invalid.');
+  const cardIds = new Set();
+  deck.cards = deck.cards.map((value, index) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) fail(`deck.cards[${index}] is invalid.`);
+    const card = clone(value);
+    storedString(card.id, `deck.cards[${index}].id`, 128);
+    if (!ID_PATTERN.test(card.id) || cardIds.has(card.id)) fail(`deck.cards[${index}].id is invalid.`);
+    cardIds.add(card.id);
+    CARD_TEXT_FIELDS.forEach((field) => storedString(card[field], `deck.cards[${index}].${field}`, 1000));
+    return card;
+  });
+  return deck;
 }
 
 function prepareDeckCollection(value) {
   if (!Array.isArray(value)) throw new Error('Decks must be an array.');
-  const prepared = value.map(prepareDeck);
+  const prepared = value.map(prepareStoredDeck);
   const ids = new Set();
   prepared.forEach((deck) => { if (ids.has(deck.id)) throw new Error('Deck identifiers must be unique.'); ids.add(deck.id); });
   return prepared;
+}
+
+function storageEnvelope(decks) { return { storageVersion: CURRENT_STORAGE_VERSION, decks }; }
+
+function migrateStorage(payload) {
+  const detected = Array.isArray(payload) ? { storageVersion: 0, decks: payload } : payload;
+  if (!detected || typeof detected !== 'object') fail('Saved storage must be an object or legacy deck array.');
+  if (!Number.isSafeInteger(detected.storageVersion)) fail('Saved storage has no valid storage version.');
+  if (detected.storageVersion > CURRENT_STORAGE_VERSION) fail(`Storage version ${detected.storageVersion} is not supported by this version of Recall.`);
+  if (detected.storageVersion === 0) {
+    if (!Array.isArray(detected.decks)) fail('Legacy storage decks must be an array.');
+    return { payload: storageEnvelope(detected.decks), migratedFrom: 0 };
+  }
+  if (detected.storageVersion < CURRENT_STORAGE_VERSION) fail(`Storage version ${detected.storageVersion} has no available migration.`);
+  if (!Array.isArray(detected.decks)) fail('Saved storage decks must be an array.');
+  return { payload: detected, migratedFrom: null };
+}
+
+function prepareDecksIndividually(decks) {
+  const valid = [];
+  const rejected = [];
+  const ids = new Set();
+  decks.forEach((rawDeck, index) => {
+    try {
+      const deck = prepareStoredDeck(rawDeck);
+      if (ids.has(deck.id)) fail('Deck identifier is duplicated.');
+      ids.add(deck.id);
+      valid.push(deck);
+    } catch (error) { rejected.push({ index, deck: clone(rawDeck), reason: error?.message || 'Deck data is invalid.' }); }
+  });
+  return { valid, rejected };
 }
 
 function publishChange(external = false) {
   if (typeof window.dispatchEvent === 'function' && typeof CustomEvent === 'function') window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: { external } }));
 }
 
-function restoreDefaults(raw, error) {
-  console.warn('Recall could not load saved decks; starter data was restored.', error);
-  const fallback = prepareDeckCollection(defaultDecks);
+function prepareStarterDecks() {
   try {
-    if (raw !== null && localStorage.getItem(RECOVERY_KEY) === null) localStorage.setItem(RECOVERY_KEY, raw);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(fallback));
-  } catch (storageError) { console.warn('Recall could not persist recovered starter data.', storageError); }
+    return prepareDeckCollection(defaultDecks);
+  } catch (error) {
+    console.warn('Recall starter data is invalid; continuing with an empty library.', error);
+    storageStatus = { message: 'Recall could not load its starter deck. You can still create or import decks.' };
+    return [];
+  }
+}
+
+function preserveRecovery(recovery) {
+  const timestamp = new Date().toISOString().replaceAll(':', '-');
+  let key = `${RECOVERY_KEY_PREFIX}:${timestamp}`;
+  let suffix = 1;
+  while (localStorage.getItem(key) !== null) key = `${RECOVERY_KEY_PREFIX}:${timestamp}:${suffix++}`;
+  localStorage.setItem(key, JSON.stringify({ recoveredAt: new Date().toISOString(), ...recovery }));
+  return key;
+}
+
+function persistEnvelope(decks) { localStorage.setItem(STORAGE_KEY, JSON.stringify(storageEnvelope(decks))); }
+
+function recoverWholePayload(raw, error) {
+  console.warn('Recall could not load saved decks; the original data was preserved for recovery.', error);
+  let preserved = false;
+  try { preserveRecovery({ rawPayload: raw, reason: error?.message || 'Saved storage is invalid.' }); preserved = true; }
+  catch (storageError) { console.warn('Recall could not preserve invalid saved data.', storageError); }
+  const fallback = prepareStarterDecks();
+  storageStatus = { message: preserved ? 'Saved decks could not be loaded and were preserved for recovery.' : 'Saved decks could not be loaded, and Recall could not create a recovery copy.' };
   return fallback;
 }
 
 function readStoredDecks() {
   let raw = null;
+  storageStatus = null;
   try {
     raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) {
-      const seeded = prepareDeckCollection(defaultDecks);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
+      const seeded = prepareStarterDecks();
+      try { persistEnvelope(seeded); }
+      catch (storageError) {
+        console.warn('Recall could not persist starter data.', storageError);
+        storageStatus = { message: 'Recall loaded, but changes may not persist in this browser.' };
+      }
       return seeded;
     }
-    return prepareDeckCollection(JSON.parse(raw));
-  } catch (error) { return restoreDefaults(raw, error); }
+    const migration = migrateStorage(JSON.parse(raw));
+    const { valid, rejected } = prepareDecksIndividually(migration.payload.decks);
+    let recoveryKey = null;
+    if (rejected.length) {
+      try { recoveryKey = preserveRecovery({ sourceStorageVersion: migration.migratedFrom ?? CURRENT_STORAGE_VERSION, rejectedDecks: rejected }); }
+      catch (storageError) { console.warn('Recall could not preserve rejected decks.', storageError); }
+      storageStatus = { rejectedDeckCount: rejected.length, recoveryKey, message: recoveryKey ? `${rejected.length} saved ${rejected.length === 1 ? 'deck could' : 'decks could'} not be loaded and ${rejected.length === 1 ? 'was' : 'were'} preserved for recovery.` : `${rejected.length} saved ${rejected.length === 1 ? 'deck could' : 'decks could'} not be loaded, and Recall could not create a recovery copy.` };
+    }
+    if ((migration.migratedFrom !== null && !rejected.length) || recoveryKey) {
+      try { persistEnvelope(valid); }
+      catch (storageError) {
+        console.warn('Recall could not persist migrated or recovered storage.', storageError);
+        storageStatus = { ...storageStatus, message: `${storageStatus?.message ? `${storageStatus.message} ` : ''}Recall could not save the repaired library.` };
+      }
+    }
+    return valid;
+  } catch (error) { return recoverWholePayload(raw, error); }
 }
 
 let canonicalDecks = readStoredDecks();
 
 function getAllDecks() { return clone(canonicalDecks); }
 function getDeckById(id) { const deck = typeof id === 'string' ? canonicalDecks.find((item) => item.id === id) : null; return deck ? clone(deck) : null; }
+function getStorageStatus() { return clone(storageStatus); }
 function refreshDecks() { canonicalDecks = readStoredDecks(); return getAllDecks(); }
 function getCardDuplicateMetadata(deckId, cards) {
   const deck = typeof deckId === 'string' ? canonicalDecks.find((item) => item.id === deckId) : null;
@@ -122,7 +208,7 @@ function getCardDuplicateMetadata(deckId, cards) {
 
 function commitDecks(decks) {
   const prepared = prepareDeckCollection(decks);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prepared));
+  persistEnvelope(prepared);
   canonicalDecks = prepared;
   publishChange();
 }
@@ -145,7 +231,7 @@ function deleteCards(deckId, cardIds) { return mutateDecks((decks) => { const de
 
 function importSelectedCards(sourceDeck, selectedCards, destination, duplicateActions = []) {
   if (!Array.isArray(selectedCards) || selectedCards.length === 0) throw new Error('Select at least one card to import.');
-  const preparedSource = prepareDeck({ ...clone(sourceDeck), cards: clone(selectedCards) });
+  const preparedSource = prepareStoredDeck({ ...clone(sourceDeck), cards: clone(selectedCards) });
   if (!Array.isArray(duplicateActions)) throw new Error('Duplicate-card actions are invalid.');
   const selectedIds = new Set(preparedSource.cards.map((card) => card.id));
   const actionsByCardId = new Map();
@@ -210,9 +296,9 @@ function importSelectedCards(sourceDeck, selectedCards, destination, duplicateAc
 
 window.addEventListener('storage', (event) => {
   if (event.key !== STORAGE_KEY) return;
-  try { canonicalDecks = event.newValue === null ? prepareDeckCollection(defaultDecks) : prepareDeckCollection(JSON.parse(event.newValue)); publishChange(true); }
-  catch (error) { console.warn('Recall ignored an invalid external deck update.', error); }
+  canonicalDecks = readStoredDecks();
+  publishChange(true);
 });
 
-window.RecallDeckStorage = { STORAGE_KEY, CHANGE_EVENT, createId, getAllDecks, getDeckById, refreshDecks, getCardDuplicateMetadata, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importSelectedCards };
+window.RecallDeckStorage = { STORAGE_KEY, RECOVERY_KEY_PREFIX, CURRENT_STORAGE_VERSION, CHANGE_EVENT, createId, getAllDecks, getDeckById, getStorageStatus, refreshDecks, getCardDuplicateMetadata, createDeck, updateDeck, deleteDeck, addCard, updateCard, deleteCards, importSelectedCards };
 })();
