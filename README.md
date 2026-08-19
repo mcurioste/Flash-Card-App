@@ -45,6 +45,12 @@ python3 -m http.server 8000
 
 Then open `http://127.0.0.1:8000/`. Do not open the HTML files directly with `file://`: browsers may isolate storage by file, preventing `decks.html` and `study.html` from seeing the same decks. GitHub Pages can host the application as-is.
 
+## AWS deployment
+
+The production workflow runs the complete Node test suite, builds an explicit allowlist into `dist/`, syncs only that directory to S3, and then invalidates CloudFront. Because filenames are not content-hashed, deployed files use `Cache-Control: no-cache` and the full CloudFront invalidation is retained for reliable updates.
+
+CloudFront response headers are managed outside this repository and must attach a response-headers policy to the production cache behavior. The required policy is `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy: camera=(), microphone=(), geolocation=()`. HSTS remains an AWS-side decision after HTTPS coverage for the production domain and its intended subdomains is verified.
+
 ## Browser storage
 
 `RecallDeckStorage` is the single deck repository used by the dashboard, study view, imports, exports, and every deck/card mutation. It owns one validated in-memory collection and persists a versioned envelope under the `recallFlashcardDecks` key in `localStorage`; the static default deck is used only to seed an empty store. Legacy bare-array storage is migrated automatically. Invalid decks are isolated while valid decks remain available, and rejected data is preserved under uniquely named `recallFlashcardDecksRecovery:*` keys.
