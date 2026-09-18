@@ -170,6 +170,10 @@
   padding: 30px;
 }
 
+.import-choice-content {
+  padding: 30px;
+}
+
 .deck-fields {
   display: grid;
   gap: 18px;
@@ -301,6 +305,48 @@
 
 .format-options small {
   color: var(--muted);
+}
+
+.import-choice-options {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.import-choice-option {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  background: var(--paper);
+  cursor: pointer;
+  text-align: left;
+}
+
+.import-choice-option:hover,
+.import-choice-option:focus-visible {
+  border-color: var(--forest);
+}
+
+.import-choice-option strong {
+  font-size: 13px;
+}
+
+.import-choice-option span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.import-choice-option:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.import-choice-actions {
+  justify-content: flex-start;
 }
 
 .import-review-dialog {
@@ -581,7 +627,8 @@
     min-height: 300px;
   }
 
-  .deck-dialog form {
+  .deck-dialog form,
+  .import-choice-content {
     padding: 22px;
   }
 

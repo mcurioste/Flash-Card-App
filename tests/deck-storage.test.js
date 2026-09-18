@@ -81,6 +81,34 @@ test('Phase 1 imports preserve uniqueness, expose matches, and skip duplicate ca
   assert.equal(JSON.parse(recall.localStorage.getItem(storage.STORAGE_KEY)).decks.find((deck) => deck.id === destination.id).cards.length, 2);
 });
 
+test('cloud-style imports preserve the source deck id and reject an existing id atomically', () => {
+  const recall = loadRecall({ defaultDecks: [] });
+  const storage = recall.RecallDeckStorage;
+  const cloudDeck = {
+    ...sourceDeck('Basic Japanese', [card('jp-cat', '猫', 'ねこ', 'cat')]),
+    id: 'basic-japanese'
+  };
+
+  const result = storage.importSelectedCards(
+    cloudDeck,
+    cloudDeck.cards,
+    { mode: 'new', title: cloudDeck.title, preserveSourceId: true }
+  );
+  assert.equal(result.deck.id, 'basic-japanese');
+  assert.equal(storage.getDeckById('basic-japanese').cards[0].id, 'jp-cat');
+
+  const beforeDuplicate = JSON.stringify(storage.getAllDecks());
+  assert.throws(
+    () => storage.importSelectedCards(
+      { ...cloudDeck, title: 'Renamed cloud copy' },
+      cloudDeck.cards,
+      { mode: 'new', title: 'Renamed cloud copy', preserveSourceId: true }
+    ),
+    /already in your collection/
+  );
+  assert.equal(JSON.stringify(storage.getAllDecks()), beforeDuplicate);
+});
+
 test('fresh storage seeds valid defaults in the current versioned envelope', () => {
   const recall = loadRecall();
   const storage = recall.RecallDeckStorage;

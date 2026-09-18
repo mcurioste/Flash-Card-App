@@ -484,9 +484,16 @@ function importSelectedCards(sourceDeck, selectedCards, destination, duplicateAc
     if (destination?.mode !== 'new') throw new Error('Choose where to import the selected cards.');
     const title = typeof destination.title === 'string' ? destination.title.trim() : '';
     if (!title || title.length > 80) throw new Error('Deck name must be between 1 and 80 characters.');
+    if (destination.preserveSourceId && decks.some((deck) => deck.id === preparedSource.id)) {
+      throw new Error('This deck is already in your collection.');
+    }
     if (hasDeckTitle(decks, title)) throw new Error('A deck with this title already exists.');
     const deckIds = new Set(decks.map((deck) => deck.id));
-    const deck = { ...preparedSource, id: createUniqueId(deckIds, 'deck'), title };
+    const deck = {
+      ...preparedSource,
+      id: destination.preserveSourceId ? preparedSource.id : createUniqueId(deckIds, 'deck'),
+      title
+    };
     decks.push(deck);
     return {
       deck,
