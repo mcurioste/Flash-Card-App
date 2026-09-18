@@ -136,6 +136,37 @@
       </form>
     </dialog>
 
+    <dialog class="deck-dialog confirm-dialog" id="import-choice-dialog" aria-labelledby="import-choice-title" aria-describedby="import-choice-description">
+      <div class="import-choice-content">
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow"><span></span>Bring your cards</p>
+            <h2 id="import-choice-title">Import a deck</h2>
+          </div>
+          <button class="dialog-close" id="close-import-choice" type="button" aria-label="Close import options">&times;</button>
+        </div>
+
+        <p class="form-intro" id="import-choice-description">Choose a Recall file from your device or download the starter deck from Recall Cloud.</p>
+
+        <div class="import-choice-options">
+          <button class="import-choice-option" id="import-from-device" type="button">
+            <strong>From this device</strong>
+            <span>Import a Recall JSON or CSV file stored on your device.</span>
+          </button>
+          <button class="import-choice-option" id="import-from-cloud" type="button">
+            <strong>From Recall Cloud</strong>
+            <span>Download a starter deck provided by Recall.</span>
+          </button>
+        </div>
+
+        <p class="form-message" id="import-choice-message" aria-live="polite"></p>
+
+        <div class="form-actions import-choice-actions">
+          <button class="secondary-button" id="cancel-import-choice" type="button">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="deck-dialog import-review-dialog" id="import-review-dialog" aria-labelledby="import-review-title">
       <form id="import-review-form">
         <div class="form-heading">

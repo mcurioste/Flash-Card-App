@@ -21,8 +21,11 @@ const {
   refreshDecks,
   updateDeck
 } = storage;
-const { MAX_CARDS, exportDeck, readImportFile } = window.RecallDeckTransfer;
+const { SCHEMA_VERSION, MAX_CARDS, exportDeck, readImportFile, validateTransfer } = window.RecallDeckTransfer;
 const { initializeNavigation } = window.RecallNavigation;
+
+const CLOUD_DECK_URL = 'https://fbd7s61x0c.execute-api.us-east-1.amazonaws.com/decks/basic';
+const CLOUD_REQUEST_TIMEOUT_MS = 10000;
 
 const grid = document.querySelector('#deck-grid');
 const emptyState = document.querySelector('#empty-state');
@@ -39,6 +42,11 @@ const exportMessage = document.querySelector('#export-form-message');
 const exportDescription = document.querySelector('#export-destination-description');
 const exportSubmit = document.querySelector('#confirm-export-deck');
 const fileInput = document.querySelector('#deck-file-input');
+const importButton = document.querySelector('#import-deck');
+const importChoiceDialog = document.querySelector('#import-choice-dialog');
+const importChoiceMessage = document.querySelector('#import-choice-message');
+const importFromDevice = document.querySelector('#import-from-device');
+const importFromCloud = document.querySelector('#import-from-cloud');
 const importDialog = document.querySelector('#import-review-dialog');
 const importForm = document.querySelector('#import-review-form');
 const importSummary = document.querySelector('#import-review-summary');
@@ -56,6 +64,8 @@ let editingDeckId = null;
 let deletingDeckId = null;
 let exportingDeckId = null;
 let pendingImport = null;
+let restoreImportChoiceFocus = true;
+let cloudImportController = null;
 const importedCardTargets = new Map();
 
 function announce(message) {
@@ -276,6 +286,78 @@ async function submitExport(event) {
   }
 }
 
+function openImportChoice() {
+  importChoiceMessage.textContent = '';
+  importFromCloud.disabled = false;
+  importFromCloud.removeAttribute('aria-busy');
+  importChoiceDialog.showModal();
+  importFromDevice.focus();
+}
+
+function closeImportChoice(restoreFocus = true) {
+  restoreImportChoiceFocus = restoreFocus;
+  cloudImportController?.abort();
+  cloudImportController = null;
+  if (importChoiceDialog.open) importChoiceDialog.close();
+}
+
+function chooseDeviceImport() {
+  closeImportChoice(false);
+  fileInput.click();
+  importButton.focus();
+}
+
+function cloudImportErrorMessage(error) {
+  if (error?.name === 'AbortError') return 'Recall Cloud took too long to respond. Check your connection and try again.';
+  if (error instanceof TypeError) return 'Recall Cloud could not be reached. Check your connection and try again.';
+  return error?.message || 'The starter deck could not be downloaded. Please try again.';
+}
+
+async function chooseCloudImport() {
+  importFromCloud.disabled = true;
+  importFromCloud.setAttribute('aria-busy', 'true');
+  importChoiceMessage.textContent = 'Downloading the starter deck…';
+  const controller = new AbortController();
+  cloudImportController = controller;
+  const timeout = setTimeout(() => controller.abort(), CLOUD_REQUEST_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(CLOUD_DECK_URL, { signal: controller.signal });
+    if (!response.ok) throw new Error('Recall Cloud could not provide the starter deck. Please try again.');
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error('Recall Cloud returned an unreadable starter deck. Please try again.');
+    }
+
+    const transfer = validateTransfer({
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      deck: payload
+    });
+    if (transfer.deck.cards.length === 0) throw new Error('The Recall Cloud starter deck does not contain any cards.');
+    if (getAllDecks().some((deck) => deck.id === transfer.deck.id)) {
+      throw new Error('This deck is already in your collection. Your existing copy was left unchanged.');
+    }
+
+    cloudImportController = null;
+    closeImportChoice(false);
+    beginImportReview(transfer.deck, { source: 'cloud', preserveSourceId: true });
+    announce(`“${transfer.deck.title}” was downloaded and is ready to review. Nothing has been imported yet.`);
+  } catch (error) {
+    importChoiceMessage.textContent = cloudImportErrorMessage(error);
+  } finally {
+    clearTimeout(timeout);
+    if (cloudImportController === controller) {
+      cloudImportController = null;
+      importFromCloud.disabled = false;
+      importFromCloud.removeAttribute('aria-busy');
+    }
+  }
+}
+
 async function handleImport(event) {
   const [file] = event.target.files;
   if (!file) return;
@@ -471,18 +553,21 @@ function updateImportControls() {
   importSubmit.disabled = selected === 0 || (creating ? !importName.value.trim() : !existingDeckSelect.value);
 }
 
-function beginImportReview(deck) {
+function beginImportReview(deck, options = {}) {
   pendingImport = {
     deck,
     cards: [],
     selectedCardIds: new Set(deck.cards.map((card) => card.id)),
     duplicateActions: new Map(),
-    filter: 'all'
+    filter: 'all',
+    source: options.source || 'device',
+    preserveSourceId: Boolean(options.preserveSourceId)
   };
   importForm.reset();
   importName.value = deck.title;
   importMessage.textContent = '';
-  importSummary.textContent = `Uploaded deck: “${deck.title}” · ${deck.cards.length} ${deck.cards.length === 1 ? 'valid card' : 'valid cards'}`;
+  const sourceLabel = pendingImport.source === 'cloud' ? 'Downloaded deck' : 'Uploaded deck';
+  importSummary.textContent = `${sourceLabel}: “${deck.title}” · ${deck.cards.length} ${deck.cards.length === 1 ? 'valid card' : 'valid cards'}`;
   renderExistingDeckOptions();
   updateImportDuplicateMetadata();
   updateImportControls();
@@ -530,7 +615,9 @@ function confirmImport(event) {
     updateImportControls();
     return;
   }
-  const destination = mode === 'new' ? { mode, title: importName.value } : { mode, deckId: existingDeckSelect.value };
+  const destination = mode === 'new'
+    ? { mode, title: importName.value, preserveSourceId: pendingImport.preserveSourceId }
+    : { mode, deckId: existingDeckSelect.value };
   importSubmit.disabled = true;
   importMessage.textContent = 'Importing selected cards…';
   try {
@@ -554,7 +641,9 @@ function confirmImport(event) {
 document.querySelectorAll('#create-deck, #nav-create-deck, #empty-create-deck').forEach((button) =>
   button.addEventListener('click', openCreateDialog)
 );
-document.querySelector('#import-deck').addEventListener('click', () => fileInput.click());
+importButton.addEventListener('click', openImportChoice);
+importFromDevice.addEventListener('click', chooseDeviceImport);
+importFromCloud.addEventListener('click', chooseCloudImport);
 fileInput.addEventListener('change', handleImport);
 
 document.querySelector('#select-all-import-cards').addEventListener('click', () => setAllImportCards(true));
@@ -617,6 +706,20 @@ document.querySelector('#delete-deck-form').addEventListener('submit', confirmDe
 document.querySelector('#close-export-deck').addEventListener('click', closeExportDialog);
 document.querySelector('#cancel-export-deck').addEventListener('click', closeExportDialog);
 exportForm.addEventListener('submit', submitExport);
+
+document.querySelector('#close-import-choice').addEventListener('click', () => closeImportChoice());
+document.querySelector('#cancel-import-choice').addEventListener('click', () => closeImportChoice());
+importChoiceDialog.addEventListener('click', (event) => {
+  if (event.target === importChoiceDialog) closeImportChoice();
+});
+importChoiceDialog.addEventListener('cancel', (event) => {
+  event.preventDefault();
+  closeImportChoice();
+});
+importChoiceDialog.addEventListener('close', () => {
+  if (restoreImportChoiceFocus) importButton.focus();
+  restoreImportChoiceFocus = true;
+});
 
 [dialog, deleteDialog, exportDialog].forEach((item) =>
   item.addEventListener('click', (event) => {
