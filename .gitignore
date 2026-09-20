@@ -1,1 +1,6 @@
 .vscode
+Sample Decks
+CODE_REVIEW_FINDINGS.md
+SECURITY_RISKS.md
+node_modules/
+dist/

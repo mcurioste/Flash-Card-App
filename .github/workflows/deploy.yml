@@ -23,6 +23,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build website
+        run: npm run build
+
       - name: Authenticate with AWS
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -31,12 +42,7 @@ jobs:
 
       - name: Upload website to S3
         run: |
-          aws s3 sync . "s3://${{ vars.S3_BUCKET_NAME }}" \
-            --delete \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
-            --exclude ".gitignore" \
-            --exclude "README.md"
+          aws s3 sync dist "s3://${{ vars.S3_BUCKET_NAME }}" --delete
 
       - name: Clear CloudFront cache
         run: |
